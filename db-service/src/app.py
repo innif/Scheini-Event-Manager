@@ -84,10 +84,36 @@ def add_reservation(date: str, name: str, quantity: int, comment: str):
     return entry_id, True
 
 def edit_reservation(id: int, date: str, name: str, quantity: int, comment: str):
-    pass
+    res = check_date(date)
+    if res is not None:
+        return res, False
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE reservierungen
+        SET name = ?, quantity = ?, comment = ?, date = ?
+        WHERE id = ?
+    ''', (name, quantity, comment, date, id))
+    # check if something was updated
+    success = cursor.rowcount > 0
+    db.commit()
+    db.close()
+    if not success:
+        return "No matching reservation found", False
+    return "Reservation updated", True
 
 def delete_reservation(id: int):
-    pass
+    db, cursor = get_db()
+    cursor.execute('''
+        DELETE FROM reservierungen
+        WHERE id = ?
+    ''', (id,))
+    # check if something was deleted
+    success = cursor.rowcount > 0
+    db.commit()
+    db.close()
+    if not success:
+        return "No matching reservation found", False
+    return "Reservation deleted", True
 
 @app.route('/')
 def root_endpoint():
@@ -118,3 +144,6 @@ def reservation():
         print(e)
         return 'Error', 500
     return 'Method not allowed', 405
+
+if __name__ == "__main__":
+    app.run()
