@@ -36,6 +36,13 @@ async def startup_event():
             date DATE NOT NULL
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS events (
+            date DATE PRIMARY KEY,
+            event_kind TEXT CHECK( type IN ('open_stage', 'solo', 'other') ) NOT NULL,
+            moderator TEXT
+        )
+    ''')
     db.commit()
     db.close()
 
