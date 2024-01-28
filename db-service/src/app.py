@@ -12,8 +12,15 @@ class Reservation(BaseModel):
     comment: Optional[str] = Field(None)
     date: str
 
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
 def get_db():
     db = sqlite3.connect("db/reservations.db")
+    db.row_factory = dict_factory
     cursor = db.cursor()
     return db, cursor
 
@@ -115,15 +122,19 @@ async def get_reservations_by_date(date: str):
 
 @app.get("/reservations/summary/", summary="Get a summary of reservations")
 def get_summary(start_date: str, end_date: str):
+    print("start")
     db, cursor = get_db()
+    print("db")
     cursor.execute('''
         SELECT date, COUNT(*) as num_reservations
-        FROM reservierungen
+        FROM reservierungen, events
         WHERE date BETWEEN ? AND ?
         GROUP BY date
     ''', (start_date, end_date))
     summary = cursor.fetchall()
+    print("fetch")
     db.close()
+    print("close")
     return summary
 
 if __name__ == "__main__":
