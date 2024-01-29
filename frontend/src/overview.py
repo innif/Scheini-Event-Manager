@@ -5,7 +5,8 @@ from datetime import timedelta
 columns = [
     {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'date', 'label': 'Datum', 'field': 'date', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'num_reservations', 'label': 'Anzahl Reservierungen', 'field': 'num_reservations', 'sortable': True},
+    {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True},
+    {'name': 'num_reservations', 'label': 'Reservierungen', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
 ]
 months = {
@@ -29,7 +30,7 @@ year_select = None
 def get_data(session, month, year):
     start = datetime.date(year, month, 1).isoformat()
     end = (datetime.date(year, month + 1, 1) - timedelta(days=1)).isoformat()
-    res = session.get("http://localhost:8000/reservations/summary/?start_date=" + start + "&end_date=" + end).json()
+    res = session.get("http://localhost:8000/events/?start_date=" + start + "&end_date=" + end).json()
     print(res)
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
