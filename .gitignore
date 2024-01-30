@@ -1,0 +1,6 @@
+
+frontend/venv/
+
+db-service/venv/
+
+frontend/src/__pycache__/
