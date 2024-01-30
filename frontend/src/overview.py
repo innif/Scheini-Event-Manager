@@ -1,10 +1,11 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
+from dialogs import edit_reservation_dialog
 
 columns = [
     {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'date', 'label': 'Datum', 'field': 'date', 'required': True, 'align': 'left', 'sortable': True},
+    {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'num_reservations', 'label': 'Reservierungen', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
@@ -34,7 +35,7 @@ def get_data(session, month, year):
     print(res)
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
-        r['date'] = date.strftime("%d.%m.%Y")
+        r['date_str'] = date.strftime("%d.%m.%Y")
         r['weekday'] = date.strftime("%A")
     return res
 
@@ -51,6 +52,7 @@ def overview_page(session):
             year_select = ui.select(years, label="Year", value = datetime.datetime.now().year, on_change=on_selection_change)
             month_select = ui.select(months, label="Month", value = datetime.datetime.now().month, on_change=on_selection_change)
 
+        data = []
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
@@ -59,7 +61,7 @@ def overview_page(session):
                 </q-td>
             """)
             table.on('action', lambda msg: print(msg))
-            table.on('add', lambda msg: print("add", msg))
+            table.on('add', lambda msg: edit_reservation_dialog(session, date=msg.args['row']['date']))
             table.on('edit', lambda msg: print("edit", msg))
 
     generate_overview(datetime.datetime.now().month, datetime.datetime.now().year)
