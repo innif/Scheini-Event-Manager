@@ -171,7 +171,7 @@ async def create_event(date: str, event_kind: str, moderator: Optional[str] = No
 async def get_event_by_date(date: str):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.date, e.event_kind, e.moderator, SUM(r.quantity) as num_reservations
+        SELECT e.date, e.event_kind, e.moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
         FROM events e
         LEFT JOIN reservations r ON e.date = r.date
         WHERE e.date = ?
@@ -217,7 +217,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.date, e.event_kind, e.moderator, SUM(r.quantity) as num_reservations
+        SELECT e.date, e.event_kind, e.moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
         FROM events e
         LEFT JOIN reservations r ON e.date = r.date
         WHERE 1=1
