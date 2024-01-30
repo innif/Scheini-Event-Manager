@@ -32,7 +32,6 @@ def get_data(session, month, year):
     start = datetime.date(year, month, 1).isoformat()
     end = (datetime.date(year, month + 1, 1) - timedelta(days=1)).isoformat()
     res = session.get("http://localhost:8000/events/?start_date=" + start + "&end_date=" + end).json()
-    print(res)
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
         r['date_str'] = date.strftime("%d.%m.%Y")
@@ -47,21 +46,33 @@ def overview_page(session):
         if month_select is not None and year_select is not None:
             generate_overview(month_select.value, year_select.value)
 
-    with ui.column():
-        with ui.card().classes("w-full"), ui.row():
-            year_select = ui.select(years, label="Year", value = datetime.datetime.now().year, on_change=on_selection_change)
-            month_select = ui.select(months, label="Month", value = datetime.datetime.now().month, on_change=on_selection_change)
+    async def add_reservation(date):
+        d = edit_reservation_dialog(session, date=date)
+        if await d:
+            generate_overview(month_select.value, year_select.value)
+
+    with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
+        with ui.card().classes("w-full"), ui.row(wrap=False).classes('w-full'):
+            month_select = ui.select(months, label="Monat", value = datetime.datetime.now().month, on_change=on_selection_change).style("width: 50%;")
+            year_select = ui.select(years, label="Jahr", value = datetime.datetime.now().year, on_change=on_selection_change).style("width: 50%;")
 
         data = []
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
-                    <q-btn @click="$parent.$emit('add', props)" icon="add" flat dense color='green'/>
                     <q-btn @click="$parent.$emit('edit', props)" icon="edit" flat dense color='blue'/>
                 </q-td>
             """)
+            table.add_slot(f'body-cell-num_reservations', """
+                <q-td :props="props">
+                    <q-badge :color="props.value < 52 ? 'green' : 'red'">
+                        {{ props.value }}
+                    </q-badge>
+                    <q-btn @click="$parent.$emit('add', props)" icon="add" flat dense color='green'/>
+                </q-td>
+            """)
             table.on('action', lambda msg: print(msg))
-            table.on('add', lambda msg: edit_reservation_dialog(session, date=msg.args['row']['date']))
-            table.on('edit', lambda msg: print("edit", msg))
+            table.on('add', lambda msg: add_reservation(msg.args['row']['date']))
+            table.on('edit', lambda msg: ui.open('/event/' + msg.args['row']['date']))
 
     generate_overview(datetime.datetime.now().month, datetime.datetime.now().year)

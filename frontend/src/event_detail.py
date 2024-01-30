@@ -1,6 +1,7 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
+from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog
 
 columns = [
     {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left', 'sortable': True},
@@ -8,6 +9,11 @@ columns = [
     {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'required': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
+event_types = {
+    "open_stage": "Open Stage",
+    "solo": "Solo",
+    "other": "Sonstiges"
+}
 
 def get_event_data(session, date: str):
     data = {}
@@ -22,14 +28,24 @@ def detail_page(session, date: str):
     def generate_overview(date):
         data = get_event_data(session, date)
         table.rows = data.get('reservations')
-        event_label.set_text(data.get('event'))
+        event = data.get('event')
+        event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator'))
 
-    with ui.column():
+    with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.row(wrap=False).classes('w-full'):
             ui.button(icon="arrow_left")
-            ui.label(date_str).classes("text-xl").style("width: 100%; height: 100%; text-align: center")
+            with ui.column().classes('flex-grow'):
+                ui.label(date_str).classes("text-xl").style("width: 100%; height: 100%; text-align: center;")
             ui.button(icon="arrow_right")
-        event_label = ui.label()
+        ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
+        event_label = ui.label().style("width: 100%; height: 100%; text-align: center")
+        with ui.row(wrap=False).classes('w-full'):
+            async def add_reservation():
+                d = edit_reservation_dialog(session, date=date)
+                if await d:
+                    generate_overview(date)
+            ui.button(icon="add", on_click=add_reservation)
+            ui.button(icon="refresh", on_click=lambda: generate_overview(date))
         with ui.table(columns, rows=[{'name': 'Name', 'quantity': 'Anzahl', 'comment': 'Kommentar'}]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
@@ -37,8 +53,22 @@ def detail_page(session, date: str):
                     <q-btn @click="$parent.$emit('delete', props)" icon="delete" flat dense color='green'/>
                 </q-td>
             """)
-            table.on('action', lambda msg: print(msg))
-            table.on('edit', lambda msg: print("edit", msg))
-            table.on('delete', lambda msg: print("delete", msg))
+            async def delete_reservation(id):
+                dialog = confirm_dialog('Reservierung löschen', 'Soll die Reservierung wirklich gelöscht werden?')
+                if await dialog:
+                    d = loading_dialog('Lösche Reservierung', 'Bitte warten...')
+                    d.open()
+                    session.delete("http://localhost:8000/reservations/" + str(id))
+                    d.close()
+                    ui.notify('Reservierung gelöscht')
+                    generate_overview(date)
+
+            async def edit_reservation(id):
+                d = edit_reservation_dialog(session, reservation_id=id)
+                if await d:
+                    generate_overview(date)
+                    
+            table.on('edit', lambda msg: edit_reservation(msg.args['row']['id']))
+            table.on('delete', lambda msg: delete_reservation(msg.args['row']['id']))
 
             generate_overview(date)

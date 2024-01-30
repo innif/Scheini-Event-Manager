@@ -1,6 +1,23 @@
 from nicegui import ui
 import datetime
 
+def loading_dialog(title, text):
+    with ui.dialog() as dialog, ui.card():
+        ui.label(title).classes('text-xl')
+        ui.label(text).classes('text')
+        ui.spinner()
+    dialog.open()
+    return dialog
+
+def confirm_dialog(title, text):
+    with ui.dialog() as dialog, ui.card():
+        ui.label(title).classes('text-xl')
+        ui.label(text).classes('text')
+        with ui.row().classes('w-full'):
+            ui.button('Abbrechen', on_click=lambda: dialog.submit(False))
+            ui.button('Bestätigen', on_click=lambda: dialog.submit(True))
+    return dialog
+
 def edit_reservation_dialog(session, reservation_id = None, date = None, name = "", num = 1, comment = ""):
     if reservation_id is None and date is None:
         return
@@ -26,7 +43,7 @@ def edit_reservation_dialog(session, reservation_id = None, date = None, name = 
                 'date': date
             })
         ui.notify('Reservierung gespeichert')
-        dialog.close()
+        dialog.submit(True)
     with ui.dialog() as dialog, ui.card():
         if reservation_id is None:
             ui.label('Neue Reservierung').classes('text-xl')
@@ -37,6 +54,6 @@ def edit_reservation_dialog(session, reservation_id = None, date = None, name = 
         num_input = ui.number('Anzahl', value=num).classes('w-full')
         comment_input = ui.input('Kommentar', value=comment).classes('w-full')
         with ui.row().classes('w-full'):
-            ui.button('Abbrechen', on_click=dialog.close)
-            ui.button('Speichern', on_click=save)
-    dialog.open()
+            cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(False))
+            save_button = ui.button('Speichern', on_click=save)
+    return dialog
