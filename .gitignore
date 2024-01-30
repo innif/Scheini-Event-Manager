@@ -4,3 +4,7 @@ frontend/venv/
 db-service/venv/
 
 frontend/src/__pycache__/
+
+db-service/db/database.db
+
+*.db
