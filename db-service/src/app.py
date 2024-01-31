@@ -12,6 +12,10 @@ class Reservation(BaseModel):
     comment: Optional[str] = Field(None)
     date: str
 
+class Event(BaseModel):
+    event_kind: str
+    moderator: Optional[str] = Field(None)
+
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -145,13 +149,13 @@ def get_summary(start_date: str, end_date: str):
     return summary
 
 @app.post("/events/", summary="Create a new event")
-async def create_event(date: str, event_kind: str, moderator: Optional[str] = None):
+async def create_event(date: str, event: Event):
     try:
         datetime.date.fromisoformat(date)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
     
-    if event_kind not in ['open_stage', 'solo', 'other']:
+    if event.event_kind not in ['open_stage', 'solo', 'other']:
         raise HTTPException(status_code=400, detail="Invalid event kind")
     
     db, cursor = get_db()
@@ -159,7 +163,7 @@ async def create_event(date: str, event_kind: str, moderator: Optional[str] = No
         cursor.execute('''
             INSERT INTO events (date, event_kind, moderator)
             VALUES (?, ?, ?)
-        ''', (date, event_kind, moderator))
+        ''', (date, event.event_kind, event.moderator))
         db.commit()
     except sqlite3.IntegrityError:
         db.close()
@@ -179,18 +183,16 @@ async def get_event_by_date(date: str):
     ''', (date,))
     event = cursor.fetchone()
     db.close()
-    if event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
     return event
 
 @app.put("/events/{date}", summary="Update an event")
-async def update_event(date: str, event_kind: str, moderator: Optional[str] = None):
+async def update_event(date: str, event: Event):
     try:
         datetime.date.fromisoformat(date)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
     
-    if event_kind not in ['open_stage', 'solo', 'other']:
+    if event.event_kind not in ['open_stage', 'solo', 'other']:
         raise HTTPException(status_code=400, detail="Invalid event kind")
     
     db, cursor = get_db()
@@ -198,12 +200,21 @@ async def update_event(date: str, event_kind: str, moderator: Optional[str] = No
         UPDATE events
         SET event_kind = ?, moderator = ?
         WHERE date = ?
-    ''', (event_kind, moderator, date))
+    ''', (event.event_kind, event.moderator, date))
     db.commit()
     db.close()
     return {"message": "Event updated"}
 
-from typing import List
+@app.delete("/events/{date}", summary="Delete an event")
+async def delete_event(date: str):
+    db, cursor = get_db()
+    cursor.execute('''
+        DELETE FROM events
+        WHERE date = ?
+    ''', (date,))
+    db.commit()
+    db.close()
+    return {"message": "Event deleted"}
 
 @app.get("/events/", summary="Get all events")
 async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None):
