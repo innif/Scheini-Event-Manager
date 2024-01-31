@@ -1,7 +1,8 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
-from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog
+from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog
+from util import event_types
 
 columns = [
     {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left', 'sortable': True},
@@ -9,11 +10,7 @@ columns = [
     {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'required': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
-event_types = {
-    "open_stage": "Open Stage",
-    "solo": "Solo",
-    "other": "Sonstiges"
-}
+
 
 def get_event_data(session, date: str):
     data = {}
@@ -44,8 +41,16 @@ def detail_page(session, date: str):
                 d = edit_reservation_dialog(session, date=date)
                 if await d:
                     generate_overview(date)
+            async def edit_event():
+                d = edit_event_dialog(session, date=date)
+                result = await d
+                if result == 'edit':
+                    generate_overview(date)
+                if result == 'delete':
+                    ui.open('/')
             ui.button(icon="add", on_click=add_reservation)
             ui.button(icon="refresh", on_click=lambda: generate_overview(date))
+            ui.button(icon="edit", on_click=edit_event)
         with ui.table(columns, rows=[{'name': 'Name', 'quantity': 'Anzahl', 'comment': 'Kommentar'}]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
@@ -67,7 +72,7 @@ def detail_page(session, date: str):
                 d = edit_reservation_dialog(session, reservation_id=id)
                 if await d:
                     generate_overview(date)
-                    
+
             table.on('edit', lambda msg: edit_reservation(msg.args['row']['id']))
             table.on('delete', lambda msg: delete_reservation(msg.args['row']['id']))
 

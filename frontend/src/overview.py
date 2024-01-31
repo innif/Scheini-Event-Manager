@@ -28,8 +28,11 @@ years = [datetime.datetime.now().year + i for i in range(-1, 3)]
 month_select = None
 year_select = None
 
-def get_data(session, month, year):
-    start = datetime.date(year, month, 1).isoformat()
+def get_data(session, month, year, past_events = False):
+    start = datetime.date(year, month, 1)
+    if not past_events:
+        start = max(start, datetime.date.today())
+    start = start.isoformat()
     end = (datetime.date(year, month + 1, 1) - timedelta(days=1)).isoformat()
     res = session.get("http://localhost:8000/events/?start_date=" + start + "&end_date=" + end).json()
     for r in res:
@@ -39,17 +42,14 @@ def get_data(session, month, year):
     return res
 
 def overview_page(session):
-    def generate_overview(month, year):
-        table.rows = get_data(session, month, year)
-
     def on_selection_change():
         if month_select is not None and year_select is not None:
-            generate_overview(month_select.value, year_select.value)
+            table.rows = get_data(session, month_select.value, year_select.value, cb_past_events.value)
 
     async def add_reservation(date):
         d = edit_reservation_dialog(session, date=date)
         if await d:
-            generate_overview(month_select.value, year_select.value)
+            on_selection_change()
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.card().classes("w-full"), ui.row(wrap=False).classes('w-full'):
@@ -57,6 +57,9 @@ def overview_page(session):
             year_select = ui.select(years, label="Jahr", value = datetime.datetime.now().year, on_change=on_selection_change).style("width: 50%;")
 
         data = []
+        with ui.row(wrap=False).classes('w-full'):
+            ui.button(icon="refresh", on_click=on_selection_change)
+            cb_past_events = ui.checkbox("Vergangene Events anzeigen", on_change=on_selection_change)
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
@@ -74,5 +77,4 @@ def overview_page(session):
             table.on('action', lambda msg: print(msg))
             table.on('add', lambda msg: add_reservation(msg.args['row']['date']))
             table.on('edit', lambda msg: ui.open('/event/' + msg.args['row']['date']))
-
-    generate_overview(datetime.datetime.now().month, datetime.datetime.now().year)
+    on_selection_change()
