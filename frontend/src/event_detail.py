@@ -38,7 +38,7 @@ def detail_page(session, date: str):
         event_label = ui.label().style("width: 100%; height: 100%; text-align: center")
         with ui.row(wrap=False).classes('w-full'):
             async def add_reservation():
-                d = edit_reservation_dialog(session, date=date)
+                d = await edit_reservation_dialog(session, date=date)
                 if await d:
                     generate_overview(date)
             async def edit_event():
@@ -69,7 +69,7 @@ def detail_page(session, date: str):
                     generate_overview(date)
 
             async def edit_reservation(id):
-                d = edit_reservation_dialog(session, reservation_id=id)
+                d = await edit_reservation_dialog(session, reservation_id=id)
                 if await d:
                     generate_overview(date)
 

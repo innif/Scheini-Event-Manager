@@ -48,7 +48,7 @@ async def overview_page(session):
             table.rows = await get_data(session, month_select.value, year_select.value, cb_past_events.value)
 
     async def add_reservation(date):
-        d = edit_reservation_dialog(session, date=date)
+        d = await edit_reservation_dialog(session, date=date)
         if await d:
             await on_selection_change()
 

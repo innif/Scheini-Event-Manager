@@ -1,6 +1,6 @@
 from nicegui import ui
 import datetime
-from util import event_types
+from util import event_types, api_call
 
 def loading_dialog():
     with ui.dialog() as dialog, ui.card():
@@ -19,25 +19,25 @@ def confirm_dialog(title, text):
             ui.button('Bestätigen', on_click=lambda: dialog.submit(True))
     return dialog
 
-def edit_reservation_dialog(session, reservation_id = None, date = None, name = "", num = 1, comment = ""):
+async def edit_reservation_dialog(session, reservation_id = None, date = None, name = "", num = 1, comment = ""):
     if reservation_id is None and date is None:
         return
     if reservation_id is not None:
-        res = session.get("http://localhost:8000/reservations/" + str(reservation_id)).json()
+        res = await api_call(session, "reservations/" + str(reservation_id))
         name = res['name']
         num = res['quantity']
         comment = res['comment']
         date = res['date']
-    def save():
+    async def save():
         if reservation_id is None:
-            session.post("http://localhost:8000/reservations/", json = {
+            await api_call(session, "reservations/", "POST", json = {
                 'name': name_input.value,
                 'quantity': num_input.value,
                 'comment': comment_input.value,
                 'date': date
             })
         else:
-            session.put("http://localhost:8000/reservations/" + str(reservation_id), json = {
+            await api_call(session, "reservations/" + str(reservation_id), "PUT", json = {
                 'name': name_input.value,
                 'quantity': num_input.value,
                 'comment': comment_input.value,
