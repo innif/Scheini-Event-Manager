@@ -248,6 +248,34 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     db.close()
     return events
 
+@app.get("/events/{date}/next", summary="Get the next event")
+async def get_next_event(date: str):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT e.date
+        FROM events e
+        WHERE e.date > ?
+        ORDER BY e.date ASC
+        LIMIT 1
+    ''', (date,))
+    event = cursor.fetchone()
+    db.close()
+    return event
+
+@app.get("/events/{date}/previous", summary="Get the previous event")
+async def get_previous_event(date: str):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT e.date
+        FROM events e
+        WHERE e.date < ?
+        ORDER BY e.date DESC
+        LIMIT 1
+    ''', (date,))
+    event = cursor.fetchone()
+    db.close()
+    return event
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

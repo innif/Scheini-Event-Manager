@@ -30,10 +30,16 @@ async def detail_page(session, date: str):
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.row(wrap=False).classes('w-full'):
-            ui.button(icon="arrow_left")
+            async def next_event():
+                d = await api_call(session, "events/" + date + "/next")
+                ui.open('/event/' + d.get('date'))
+            async def previous_event():
+                d = await api_call(session, "events/" + date + "/previous")
+                ui.open('/event/' + d.get('date'))
+            ui.button(icon="arrow_left", on_click=previous_event)
             with ui.column().classes('flex-grow'):
                 ui.label(date_str).classes("text-xl").style("width: 100%; height: 100%; text-align: center;")
-            ui.button(icon="arrow_right")
+            ui.button(icon="arrow_right", on_click=next_event)
         ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
         event_label = ui.label().style("width: 100%; height: 100%; text-align: center")
         with ui.row(wrap=False).classes('w-full'):
