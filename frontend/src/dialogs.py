@@ -93,7 +93,7 @@ async def edit_event_dialog(session, date, moderator = "", event_kind = "open_st
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full')
         moderator_input = ui.input('Moderator', value=moderator).classes('w-full')
         if res is not None:
-            delete_button = ui.button('Event löschen', on_click=delete)
+            delete_button = ui.button('Event löschen', on_click=delete, color='red', icon = 'delete').classes('w-full')
         with ui.row().classes('w-full'):
             cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(None))
             save_button = ui.button('Speichern', on_click=save)
