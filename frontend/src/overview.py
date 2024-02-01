@@ -1,7 +1,8 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
-from dialogs import edit_reservation_dialog
+from dialogs import edit_reservation_dialog, loading_dialog
+from util import api_call
 
 columns = [
     {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
@@ -28,28 +29,28 @@ years = [datetime.datetime.now().year + i for i in range(-1, 3)]
 month_select = None
 year_select = None
 
-def get_data(session, month, year, past_events = False):
+async def get_data(session, month, year, past_events = False):
     start = datetime.date(year, month, 1)
     if not past_events:
         start = max(start, datetime.date.today())
     start = start.isoformat()
     end = (datetime.date(year, month + 1, 1) - timedelta(days=1)).isoformat()
-    res = session.get("http://localhost:8000/events/?start_date=" + start + "&end_date=" + end).json()
+    res = await api_call(session, "events/?start_date=" + start + "&end_date=" + end)
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
         r['date_str'] = date.strftime("%d.%m.%Y")
         r['weekday'] = date.strftime("%A")
     return res
 
-def overview_page(session):
-    def on_selection_change():
+async def overview_page(session):
+    async def on_selection_change():
         if month_select is not None and year_select is not None:
-            table.rows = get_data(session, month_select.value, year_select.value, cb_past_events.value)
+            table.rows = await get_data(session, month_select.value, year_select.value, cb_past_events.value)
 
     async def add_reservation(date):
-        d = edit_reservation_dialog(session, date=date)
+        d = await edit_reservation_dialog(session, date=date)
         if await d:
-            on_selection_change()
+            await on_selection_change()
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.card().classes("w-full"), ui.row(wrap=False).classes('w-full'):
@@ -77,4 +78,4 @@ def overview_page(session):
             table.on('action', lambda msg: print(msg))
             table.on('add', lambda msg: add_reservation(msg.args['row']['date']))
             table.on('edit', lambda msg: ui.open('/event/' + msg.args['row']['date']))
-    on_selection_change()
+    await on_selection_change()
