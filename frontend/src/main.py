@@ -9,7 +9,6 @@ from event_detail import detail_page
 locale.setlocale(locale.LC_ALL, 'de_DE')
 
 session = requests.Session()
-session.get("http://localhost:8000/")
 
 @ui.page('/')
 async def index_page():
@@ -17,6 +16,6 @@ async def index_page():
 
 @ui.page('/event/{date}')
 async def event_page(date: str):
-    detail_page(session, date)
+    await detail_page(session, date)
 
 ui.run()
