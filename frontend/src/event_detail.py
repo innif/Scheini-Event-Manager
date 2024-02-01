@@ -42,7 +42,7 @@ def detail_page(session, date: str):
                 if await d:
                     generate_overview(date)
             async def edit_event():
-                d = edit_event_dialog(session, date=date)
+                d = await edit_event_dialog(session, date=date)
                 result = await d
                 if result == 'edit':
                     generate_overview(date)

@@ -59,32 +59,30 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
             save_button = ui.button('Speichern', on_click=save)
     return dialog
 
-def edit_event_dialog(session, date, moderator = "", event_kind = "open_stage"):
-    res = session.get("http://localhost:8000/events/" + str(date)).json()
+async def edit_event_dialog(session, date, moderator = "", event_kind = "open_stage"):
+    res = await api_call(session, "events/" + str(date))
     if res is not None:
         event_kind = res.get('event_kind')
         moderator = res.get('moderator')
     async def delete():
         d = confirm_dialog('Event löschen', 'Soll das Event wirklich gelöscht werden?')
         if await d:
-            session.delete("http://localhost:8000/events/" + str(date))
+            await api_call(session, "events/" + str(date), "DELETE")
             dialog.submit('delete')
-    def save():
+    async def save():
         if res is None:
-            r = session.post("http://localhost:8000/events/", json = {
+            r = await api_call(session, "events/", "POST", json = {
                 'date': date_input.value,
                 'event_kind': event_kind_input.value,
                 'moderator': moderator_input.value,
             })
-            print(r)
         else:
-            r = session.put("http://localhost:8000/events/" + str(date), json = {
+            r = await api_call(session, "events/" + str(date), "PUT", json = {
                 'event_kind': event_kind_input.value,
                 'moderator': moderator_input.value,
             })
-            print(r)
-        ui.notify('Reservierung gespeichert')
-        dialog.submit('saved')
+        ui.notify('Event gespeichert')
+        dialog.submit('edit')
     with ui.dialog() as dialog, ui.card():
         if res is None:
             ui.label('Neues Event').classes('text-xl')
