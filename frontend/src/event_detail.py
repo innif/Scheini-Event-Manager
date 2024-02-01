@@ -76,4 +76,4 @@ async def detail_page(session, date: str):
             table.on('edit', lambda msg: edit_reservation(msg.args['row']['id']))
             table.on('delete', lambda msg: delete_reservation(msg.args['row']['id']))
 
-            await generate_overview()
+    ui.timer(0.1, generate_overview, once=True)
