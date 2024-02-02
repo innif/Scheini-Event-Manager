@@ -61,16 +61,13 @@ async def detail_page(session, date: str):
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
                     <q-btn @click="$parent.$emit('edit', props)" icon="edit" flat dense color='blue'/>
-                    <q-btn @click="$parent.$emit('delete', props)" icon="delete" flat dense color='green'/>
+                    <q-btn @click="$parent.$emit('delete', props)" icon="delete" flat dense color='red'/>
                 </q-td>
             """)
             async def delete_reservation(id):
                 dialog = confirm_dialog('Reservierung löschen', 'Soll die Reservierung wirklich gelöscht werden?')
                 if await dialog:
-                    d = loading_dialog('Lösche Reservierung', 'Bitte warten...')
-                    d.open()
                     await api_call(session, "reservations/" + str(id), "DELETE")
-                    d.close()
                     ui.notify('Reservierung gelöscht')
                     await generate_overview()
 
