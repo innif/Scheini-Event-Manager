@@ -1,10 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets
 from pydantic import BaseModel, Field
 from typing import Optional
 import sqlite3
 import datetime
+import json
 
 app = FastAPI()
+security = HTTPBasic()
+secrets_object = json.load(open("secrets.json"))
 
 class Reservation(BaseModel):
     name: str
@@ -50,8 +55,19 @@ async def startup_event():
     db.commit()
     db.close()
 
+def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, secrets_object.get("username"))
+    correct_password = secrets.compare_digest(credentials.password, secrets_object.get("password"))
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
 @app.post("/reservations/", summary="Create a new reservation")
-async def create_reservation(reservation: Reservation):
+async def create_reservation(reservation: Reservation, username: str = Depends(get_current_username)):
     try:
         datetime.date.fromisoformat(reservation.date)
     except ValueError:
@@ -67,7 +83,7 @@ async def create_reservation(reservation: Reservation):
     return {"message": "Reservation created"}
 
 @app.get("/reservations/", summary="Get all reservations")
-async def get_reservations():
+async def get_reservations(username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         SELECT id, name, quantity, comment, date
@@ -78,7 +94,7 @@ async def get_reservations():
     return reservations
 
 @app.get("/reservations/{reservation_id}", summary="Get a reservation by ID")
-async def get_reservation(reservation_id: int):
+async def get_reservation(reservation_id: int, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         SELECT id, name, quantity, comment, date
@@ -92,7 +108,7 @@ async def get_reservation(reservation_id: int):
     return reservation
     
 @app.put("/reservations/{reservation_id}", summary="Update a reservation")
-async def update_reservation(reservation_id: int, reservation: Reservation):
+async def update_reservation(reservation_id: int, reservation: Reservation, username: str = Depends(get_current_username)):
     try:
         datetime.date.fromisoformat(reservation.date)
     except ValueError:
@@ -109,7 +125,7 @@ async def update_reservation(reservation_id: int, reservation: Reservation):
     return {"message": "Reservation updated"}
 
 @app.delete("/reservations/{reservation_id}", summary="Delete a reservation")
-async def delete_reservation(reservation_id: int):
+async def delete_reservation(reservation_id: int, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         DELETE FROM reservations
@@ -120,7 +136,7 @@ async def delete_reservation(reservation_id: int):
     return {"message": "Reservation deleted"}
 
 @app.get("/reservations/date/{date}", summary="Get reservations by date")
-async def get_reservations_by_date(date: str):
+async def get_reservations_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         SELECT id, name, quantity, comment, date
@@ -132,7 +148,7 @@ async def get_reservations_by_date(date: str):
     return reservations
 
 @app.get("/reservations/summary/", summary="Get a summary of reservations")
-def get_summary(start_date: str, end_date: str):
+async def get_summary(start_date: str, end_date: str, username: str = Depends(get_current_username)):
     print("start")
     db, cursor = get_db()
     print("db")
@@ -149,7 +165,7 @@ def get_summary(start_date: str, end_date: str):
     return summary
 
 @app.post("/events/", summary="Create a new event")
-async def create_event(date: str, event: Event):
+async def create_event(date: str, event: Event, username: str = Depends(get_current_username)):
     try:
         datetime.date.fromisoformat(date)
     except ValueError:
@@ -172,7 +188,7 @@ async def create_event(date: str, event: Event):
     return {"message": "Event created"}
 
 @app.get("/events/{date}", summary="Get an event by date")
-async def get_event_by_date(date: str):
+async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         SELECT e.date, e.event_kind, e.moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
@@ -186,7 +202,7 @@ async def get_event_by_date(date: str):
     return event
 
 @app.put("/events/{date}", summary="Update an event")
-async def update_event(date: str, event: Event):
+async def update_event(date: str, event: Event, username: str = Depends(get_current_username)):
     try:
         datetime.date.fromisoformat(date)
     except ValueError:
@@ -206,7 +222,7 @@ async def update_event(date: str, event: Event):
     return {"message": "Event updated"}
 
 @app.delete("/events/{date}", summary="Delete an event")
-async def delete_event(date: str):
+async def delete_event(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         DELETE FROM events
@@ -217,7 +233,7 @@ async def delete_event(date: str):
     return {"message": "Event deleted"}
 
 @app.get("/events/", summary="Get all events")
-async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None):
+async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None, username: str = Depends(get_current_username)):
     try:
         if start_date is not None:
             datetime.date.fromisoformat(start_date)
@@ -249,7 +265,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     return events
 
 @app.get("/events/{date}/next", summary="Get the next event")
-async def get_next_event(date: str):
+async def get_next_event(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         SELECT e.date
@@ -263,7 +279,7 @@ async def get_next_event(date: str):
     return event
 
 @app.get("/events/{date}/previous", summary="Get the previous event")
-async def get_previous_event(date: str):
+async def get_previous_event(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
         SELECT e.date

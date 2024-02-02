@@ -48,6 +48,8 @@ def login() -> Optional[RedirectResponse]:
     def try_login() -> None:  # local function to avoid passing username and password as arguments
         if passwords.get(username.value) == password.value:
             app.storage.user.update({'username': username.value, 'authenticated': True})
+            # api_login = secrets.get('api-logins')
+            # app.storage.user.update({'api-user': api_login.get("username"), 'api-pswd': api_login.get("password")})
             ui.open(app.storage.user.get('referrer_path', '/'))  # go back to where the user wanted to go
         else:
             ui.notify('Wrong username or password', color='negative')

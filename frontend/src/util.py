@@ -1,6 +1,10 @@
 import requests
 import dialogs
-from nicegui import ui, run
+from nicegui import ui, run, app
+import hashlib
+import json
+import datetime
+from requests.auth import HTTPBasicAuth
 
 event_types = {
     "open_stage": "Open Stage",
@@ -8,12 +12,13 @@ event_types = {
     "other": "Sonstiges"
 }
 
+# key = None
 session = requests.Session()
 url = "http://localhost:8000/"
 
 async def api_call(session, path: str, method = "GET", json = None):
-    print("api-call")
     dialog = dialogs.loading_dialog()
+    # auth = HTTPBasicAuth(app.storage.user.get("api-user"), app.storage.user.get("api-pswd"))
     res = None
     if method == "GET":
         res = await run.io_bound(session.get, url + path, json = json)
@@ -28,3 +33,10 @@ async def api_call(session, path: str, method = "GET", json = None):
         ui.notify(res.text, color="negative")
     dialog.close()
     return res.json()
+
+# def get_secrets():
+#     try:
+#         return json.load(open("secrets.json"))
+#     except:
+#         print("No secrets file found")
+#         return {}
