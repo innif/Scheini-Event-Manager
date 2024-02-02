@@ -63,4 +63,4 @@ def login() -> Optional[RedirectResponse]:
         ui.button('Log in', on_click=try_login).classes('w-full')
     return None
 
-ui.run(storage_secret=secrets.get('storage-secret'), port=80)
+ui.run(storage_secret=secrets.get('storage-secret'), port=8080, ssl_certfile = "fullchain.pem", ssl_keyfile = "privkey.pem")
