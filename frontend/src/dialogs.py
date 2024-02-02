@@ -59,8 +59,10 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
             save_button = ui.button('Speichern', on_click=save)
     return dialog
 
-async def edit_event_dialog(session, date, moderator = "", event_kind = "open_stage"):
-    res = await api_call(session, "events/" + str(date))
+async def edit_event_dialog(session, date = None, moderator = "", event_kind = "open_stage"):
+    res = None
+    if date is not None:
+        res = await api_call(session, "events/" + str(date))
     if res is not None:
         event_kind = res.get('event_kind')
         moderator = res.get('moderator')
@@ -70,9 +72,13 @@ async def edit_event_dialog(session, date, moderator = "", event_kind = "open_st
             await api_call(session, "events/" + str(date), "DELETE")
             dialog.submit('delete')
     async def save():
+        try:
+            date = datetime.date.fromisoformat(date_input.value)
+        except:
+            ui.notify('Ungültiges Datum', color='negative')
+            return
         if res is None:
-            r = await api_call(session, "events/", "POST", json = {
-                'date': date_input.value,
+            r = await api_call(session, "events/?date=" + date_input.value, "POST", json = {
                 'event_kind': event_kind_input.value,
                 'moderator': moderator_input.value,
             })
@@ -86,10 +92,9 @@ async def edit_event_dialog(session, date, moderator = "", event_kind = "open_st
     with ui.dialog() as dialog, ui.card():
         if res is None:
             ui.label('Neues Event').classes('text-xl')
-            ui.label('Datum: ' + datetime.date.fromisoformat(date).strftime("%d.%m.%y"))
         else:
             ui.label('Event bearbeiten').classes('text-xl')
-            date_input = ui.input('Date', value=date).classes('w-full')
+        date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full')
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full')
         moderator_input = ui.input('Moderator', value=moderator).classes('w-full')
         if res is not None:
