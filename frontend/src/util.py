@@ -23,5 +23,8 @@ async def api_call(session, path: str, method = "GET", json = None):
         res = await run.io_bound(session.put, url + path, json = json)
     elif method == "DELETE":
         res = await run.io_bound(session.delete, url + path, json = json)
+    if res.status_code != 200:
+        ui.notify("Fehler bei der Anfrage", color="negative")
+        ui.notify(res.text, color="negative")
     dialog.close()
     return res.json()
