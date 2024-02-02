@@ -10,15 +10,16 @@ import requests
 import locale
 from overview import overview_page
 from event_detail import detail_page
+import json
+from util import get_secrets
 
 locale.setlocale(locale.LC_ALL, 'de_DE')
 
 session = requests.Session()
 
-passwords = {'mark': 'marki', 'finn': 'finni', "daniela": "dani"}
-
 unrestricted_page_routes = {'/login'}
 
+secrets = get_secrets()
 
 class AuthMiddleware(BaseHTTPMiddleware):
     """This middleware restricts access to all NiceGUI pages.
@@ -46,10 +47,10 @@ async def event_page(date: str):
 @ui.page('/login')
 def login() -> Optional[RedirectResponse]:
     def try_login() -> None:  # local function to avoid passing username and password as arguments
-        if passwords.get(username.value) == password.value:
+        if secrets.get("logins").get(username.value) == password.value:
             app.storage.user.update({'username': username.value, 'authenticated': True})
-            # api_login = secrets.get('api-logins')
-            # app.storage.user.update({'api-user': api_login.get("username"), 'api-pswd': api_login.get("password")})
+            api_login = secrets.get('api-login')
+            app.storage.user.update({'api-user': api_login.get("username"), 'api-pswd': api_login.get("password")})
             ui.open(app.storage.user.get('referrer_path', '/'))  # go back to where the user wanted to go
         else:
             ui.notify('Wrong username or password', color='negative')
@@ -62,4 +63,4 @@ def login() -> Optional[RedirectResponse]:
         ui.button('Log in', on_click=try_login).classes('w-full')
     return None
 
-ui.run(storage_secret='psssst')
+ui.run(storage_secret=secrets.get('storage-secret'))
