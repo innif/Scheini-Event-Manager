@@ -26,7 +26,7 @@ async def detail_page(session, date: str):
         data = await get_event_data(session, date)
         table.rows = data.get('reservations')
         event = data.get('event')
-        event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator'))
+        event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator') + " - " + str(event.get("num_reservations")) + " Reservierungen")
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.row(wrap=False).classes('w-full'):
