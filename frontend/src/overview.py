@@ -1,7 +1,7 @@
-from nicegui import ui
+from nicegui import ui, app
 import datetime
 from datetime import timedelta
-from dialogs import edit_reservation_dialog, loading_dialog
+from dialogs import edit_reservation_dialog, loading_dialog, edit_event_dialog
 from util import api_call
 import asyncio
 
@@ -53,6 +53,11 @@ async def overview_page(session):
         if await d:
             await on_selection_change()
 
+    async def add_event():
+        d = await edit_event_dialog(session)
+        if await d:
+            await on_selection_change()
+
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.card().classes("w-full"), ui.row(wrap=False).classes('w-full'):
             month_select = ui.select(months, label="Monat", value = datetime.datetime.now().month, on_change=on_selection_change).style("width: 50%;")
@@ -60,9 +65,12 @@ async def overview_page(session):
             # TODO: forward and backward buttons to change months
 
         data = []
-        with ui.row(wrap=False).classes('w-full'):
-            ui.button(icon="refresh", on_click=on_selection_change)
+        with ui.row(wrap=False).classes('w-full'): 
             cb_past_events = ui.checkbox("Vergangene Events anzeigen", on_change=on_selection_change)
+            ui.space()
+            ui.button(icon="add", on_click=add_event)
+            ui.button(icon="refresh", on_click=on_selection_change)
+            ui.button(on_click=lambda: (app.storage.user.clear(), ui.open('/login')), icon='logout')
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
