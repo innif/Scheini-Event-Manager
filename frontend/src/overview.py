@@ -6,6 +6,7 @@ from util import api_call
 import asyncio
 
 columns = [
+    {'name': 'event_kind', 'label': 'Art', 'field': 'event_kind', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True},
@@ -63,7 +64,7 @@ async def overview_page(session):
             month_select = ui.select(months, label="Monat", value = datetime.datetime.now().month, on_change=on_selection_change).style("width: 50%;")
             year_select = ui.select(years, label="Jahr", value = datetime.datetime.now().year, on_change=on_selection_change).style("width: 50%;")
             # TODO: forward and backward buttons to change months
-
+        
         data = []
         with ui.row(wrap=False).classes('w-full'): 
             cb_past_events = ui.checkbox("Vergangene Events anzeigen", on_change=on_selection_change)
@@ -72,6 +73,11 @@ async def overview_page(session):
             ui.button(icon="refresh", on_click=on_selection_change)
             ui.button(on_click=lambda: (app.storage.user.clear(), ui.open('/login')), icon='logout')
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
+            table.add_slot(f'body-cell-event_kind', """
+                <q-td :props="props">
+                    <q-btn :icon="props.value == 'open_stage' ? 'mic_external_on' : 'person'" flat dense/>
+                </q-td>
+            """)
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
                     <q-btn @click="$parent.$emit('edit', props)" icon="edit" flat dense color='blue'/>

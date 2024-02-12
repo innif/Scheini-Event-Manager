@@ -64,4 +64,4 @@ def login() -> Optional[RedirectResponse]:
         ui.button('Log in', on_click=try_login).classes('w-full')
     return None
 
-ui.run(storage_secret=secrets.get('storage-secret'), port=80, title='Das Rote Buch', favicon='📕')
+ui.run(storage_secret=secrets.get('storage-secret'), port=80, title='Das Rote Buch', favicon='📕', reload=False, language="de-DE")
