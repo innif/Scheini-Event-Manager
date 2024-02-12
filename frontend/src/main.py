@@ -57,10 +57,11 @@ def login() -> Optional[RedirectResponse]:
 
     if app.storage.user.get('authenticated', False):
         return RedirectResponse('/')
+    ui.label("Das Rote Buch 📕").classes('text-xl')
     with ui.card().classes('absolute-center'):
         username = ui.input('Username').on('keydown.enter', try_login).classes('w-full')
         password = ui.input('Password', password=True, password_toggle_button=True).on('keydown.enter', try_login).classes('w-full')
         ui.button('Log in', on_click=try_login).classes('w-full')
     return None
 
-ui.run(storage_secret=secrets.get('storage-secret'), port=80)
+ui.run(storage_secret=secrets.get('storage-secret'), port=80, title='Das Rote Buch', favicon='📕')
