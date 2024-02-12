@@ -1,6 +1,7 @@
 version: "3"
 services:
   db:
+    restart: always
     build: ./db-service
     # ports:
     #   - "8000:5000"
@@ -14,6 +15,7 @@ services:
       - "traefik.http.routers.api.entrypoints=api_websecure"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
   ui:
+    restart: always
     build: ./frontend
     # ports:
     #   - "8001:80"
@@ -28,6 +30,7 @@ services:
       - "traefik.http.routers.app.entrypoints=websecure"
       - "traefik.http.routers.app.tls.certresolver=myresolver"
   traefik:
+    restart: always
     image: traefik:v2.4
     command:
       - "--api.insecure=true"
