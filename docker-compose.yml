@@ -1,0 +1,51 @@
+version: "3"
+services:
+  db:
+    build: ./db-service
+    # ports:
+    #   - "8000:5000"
+    expose:
+      - 5000
+    volumes:
+      - db-data:/app/db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`ticket-system.scheinbar.de`)"
+      - "traefik.http.routers.api.entrypoints=api_websecure"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
+  ui:
+    build: ./frontend
+    # ports:
+    #   - "8001:80"
+    expose:
+      - 80
+    volumes:
+      # - ./frontend/.nicegui:/app/.nicegui
+      - nicegui-data:/app/.nicegui
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`ticket-system.scheinbar.de`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=myresolver"
+  traefik:
+    image: traefik:v2.4
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.api_websecure.address=:5000"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=finn@scheinbar.de"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "5000:5000"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+
+volumes:
+  nicegui-data:
+  db-data:
