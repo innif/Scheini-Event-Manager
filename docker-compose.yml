@@ -1,0 +1,20 @@
+version: "3"
+services:
+  db:
+    build: ./db-service
+    ports:
+      - "8000:5000"
+    volumes:
+      - db-data:/app/db
+  ui:
+    build: ./frontend
+    ports:
+      - "80:80"
+    volumes:
+      # - ./frontend/.nicegui:/app/.nicegui
+      - nicegui-data:/app/.nicegui
+    
+
+volumes:
+  nicegui-data:
+  db-data:

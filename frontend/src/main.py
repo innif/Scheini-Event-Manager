@@ -13,7 +13,7 @@ from event_detail import detail_page
 import json
 from util import get_secrets
 
-locale.setlocale(locale.LC_ALL, 'de_DE')
+locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
 
 session = requests.Session()
 

@@ -15,7 +15,7 @@ event_types = {
 
 # key = None
 session = requests.Session()
-url = "http://localhost:8000/"
+url = "http://db:5000/"
 
 def get_secrets():
     try:
