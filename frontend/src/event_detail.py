@@ -52,10 +52,10 @@ async def detail_page(session, date: str):
             async def previous_event():
                 d = await api_call(session, "events/" + date + "/previous")
                 ui.open('/event/' + d.get('date'))
-            ui.button(icon="arrow_left", on_click=previous_event)
+            ui.button(icon="arrow_back", on_click=previous_event)
             with ui.column().classes('flex-grow'):
                 ui.label(date_str).classes("text-xl").style("width: 100%; height: 100%; text-align: center;")
-            ui.button(icon="arrow_right", on_click=next_event)
+            ui.button(icon="arrow_forward", on_click=next_event)
         ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
         event_label = ui.label().style("width: 100%; height: 100%; text-align: center")
         with ui.row(wrap=False).classes('w-full'):
@@ -70,16 +70,17 @@ async def detail_page(session, date: str):
                     await generate_overview()
                 if result == 'delete':
                     ui.open('/')
-            ui.button(icon="add", on_click=add_reservation)
+            ui.label("Reservierungen").classes("text-xl")
             ui.space()
+            ui.button(icon="add", on_click=add_reservation, color="positive")
             ui.button(icon="refresh", on_click=generate_overview)
             ui.button(icon="edit", on_click=edit_event)
-            ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True))
+            ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
         with ui.table(columns, rows=[{'name': 'Name', 'quantity': 'Anzahl', 'comment': 'Kommentar'}]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
-                    <q-btn @click="$parent.$emit('edit', props)" icon="edit" flat dense color='blue'/>
-                    <q-btn @click="$parent.$emit('delete', props)" icon="delete" flat dense color='red'/>
+                    <q-btn @click="$parent.$emit('edit', props)" icon="edit" flat dense color='primary'/>
+                    <q-btn @click="$parent.$emit('delete', props)" icon="delete" flat dense color='negative'/>
                 </q-td>
             """)
             async def delete_reservation(id):
