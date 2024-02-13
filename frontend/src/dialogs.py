@@ -2,6 +2,12 @@ from nicegui import ui
 import datetime
 from util import event_types, api_call
 
+columns_artists = [
+    {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left'},
+    {'name': 'comment', 'label': 'Kommentar', 'field': 'comment'},
+    {'name': 'buttons', 'label': '', 'field': 'buttons'},
+]
+
 def loading_dialog():
     with ui.dialog() as dialog, ui.card():
         #ui.label("Bitte warten...").classes('text-xl')
@@ -57,6 +63,38 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
         with ui.row().classes('w-full'):
             cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(False))
             save_button = ui.button('Speichern', on_click=save)
+    return dialog
+
+async def edit_bookings_dialog(session, date):
+    event = await api_call(session, f"events/{date}")
+    artists = await api_call(session, f"artists/event/{date}")
+    async def delete(msg):
+        artist_id = msg.args['row']['id']
+        d = confirm_dialog('Künstler*in löschen', 'Soll die Künstler*in wirklich gelöscht werden?')
+        if await d:
+            print("bookings/?event_id={"+str(event.get("id"))+"}&artist_id="+str(artist_id))
+            await api_call(session, "bookings/?event_id="+str(event.get("id"))+"&artist_id="+str(artist_id), "DELETE")
+            await update_artists()
+    async def add_artist():
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={new_artist.value}', method="POST")
+        new_artist.value = ""
+        await update_artists()
+    async def update_artists():
+        table.rows = await api_call(session, f"artists/event/{date}")
+        table.update()
+    with ui.dialog() as dialog, ui.card():
+        table = ui.table(columns=columns_artists, rows=artists).classes('w-full')
+        table.add_slot(f'body-cell-buttons', """
+                <q-td :props="props">
+                    <q-btn @click="$parent.$emit('delete', props)" icon="delete" dense flat color='primary'/>
+                </q-td>
+            """)
+        table.on('delete', delete)
+        with ui.row().classes('w-full no-wrap'):
+            new_artist = ui.input('Künstler*in hinzufügen').classes('w-full')
+            ui.space()
+            ui.button(icon="add", on_click=add_artist, color="positive").classes("rounded-full my-auto flat")
+        ui.button('Schließen', on_click=dialog.submit).classes('w-full')
     return dialog
 
 async def edit_event_dialog(session, date = None, moderator = "", event_kind = "open_stage"):
