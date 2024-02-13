@@ -9,7 +9,7 @@ from nicegui import Client, app, ui
 import requests
 import locale
 from overview import overview_page
-from event_detail import detail_page
+from event_detail import detail_page, print_page
 import json
 from util import get_secrets
 
@@ -43,6 +43,10 @@ async def index_page():
 @ui.page('/event/{date}')
 async def event_page(date: str):
     await detail_page(session, date)
+
+@ui.page('/print/{date}')
+async def event_page(date: str):
+    await print_page(session, date)
 
 @ui.page('/login')
 def login() -> Optional[RedirectResponse]:

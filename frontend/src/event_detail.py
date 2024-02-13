@@ -11,6 +11,20 @@ columns = [
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
 
+async def print_page(session, date: str):
+    date_str = datetime.date.fromisoformat(date).strftime("%A, %d.%m.%Y")
+    reservations = await api_call(session, "reservations/date/" + date)
+    ui.label(date_str).classes("text-xl")
+    with ui.column():
+        for r in reservations:
+            with ui.row().classes("w-full"):
+                ui.label(r['name'])
+                ui.label(r['comment']).classes("text-sm italic").style("color: grey")
+                ui.space()
+                ui.label(str(r['quantity']) + "x")
+            ui.separator()
+    ui.run_javascript("window.print()")
+    ui.timer(0.1, lambda: ui.run_javascript("window.close()"), once=True)
 
 async def get_event_data(session, date: str):
     data = {}
@@ -55,8 +69,10 @@ async def detail_page(session, date: str):
                 if result == 'delete':
                     ui.open('/')
             ui.button(icon="add", on_click=add_reservation)
+            ui.space()
             ui.button(icon="refresh", on_click=generate_overview)
             ui.button(icon="edit", on_click=edit_event)
+            ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True))
         with ui.table(columns, rows=[{'name': 'Name', 'quantity': 'Anzahl', 'comment': 'Kommentar'}]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
