@@ -21,6 +21,13 @@ class Event(BaseModel):
     event_kind: str
     moderator: Optional[str] = Field(None)
 
+class Artist(BaseModel):
+    name: str
+    description: Optional[str] = Field(None)
+    description_short: Optional[str] = Field(None)
+    image: Optional[str] = Field(None)
+    website: Optional[str] = Field(None)
+
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -42,18 +49,49 @@ async def startup_event():
             name TEXT NOT NULL,
             quantity INTEGER NOT NULL,
             comment TEXT,
-            date DATE NOT NULL
+            event_id INTEGER REFERENCES events(id)
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS events (
-            date DATE PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date DATE,
             event_kind TEXT CHECK( event_kind IN ('open_stage', 'solo', 'other') ) NOT NULL,
-            moderator TEXT
+            moderator_id INTEGER REFERENCES artists(id) ON DELETE SET NULL,
+            description TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS artists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            description_short TEXT,
+            image TEXT,
+            website TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bookings (
+            event_id INTEGER REFERENCES events(id),
+            artist_id INTEGER REFERENCES artists(id),
+            comment TEXT,
+            PRIMARY KEY (event_id, artist_id)
         )
     ''')
     db.commit()
     db.close()
+
+def get_event_id(date):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id
+        FROM events
+        WHERE date = ?
+    ''', (date,))
+    event_id = cursor.fetchone()
+    db.close()
+    return event_id
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, secrets_object.get("username"))
@@ -72,22 +110,27 @@ async def create_reservation(reservation: Reservation, username: str = Depends(g
         datetime.date.fromisoformat(reservation.date)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
-    
     db, cursor = get_db()
+    cursor.execute(''' SELECT date FROM events WHERE date = ? ''', (reservation.date,))
+    if cursor.fetchone() is None:
+        db.close()
+        raise HTTPException(status_code=404, detail="Event not found")
     cursor.execute('''
-        INSERT INTO reservations (name, quantity, comment, date)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO reservations (name, quantity, comment, event_id)
+        VALUES (?, ?, ?, (SELECT id FROM events WHERE date = ?))
     ''', (reservation.name, reservation.quantity, reservation.comment, reservation.date))
+    reservation_id = cursor.lastrowid
     db.commit()
     db.close()
-    return {"message": "Reservation created"}
+    return {"message": "Reservation created", "reservation_id": reservation_id}
 
 @app.get("/reservations/", summary="Get all reservations")
 async def get_reservations(username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT id, name, quantity, comment, date
-        FROM reservations
+        SELECT r.id, r.name, r.quantity, r.comment, r.event_id, e.date
+        FROM reservations r, events e
+        WHERE r.event_id = e.id
     ''')
     reservations = cursor.fetchall()
     db.close()
@@ -97,9 +140,9 @@ async def get_reservations(username: str = Depends(get_current_username)):
 async def get_reservation(reservation_id: int, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT id, name, quantity, comment, date
-        FROM reservations
-        WHERE id = ?
+        SELECT r.id, r.name, r.quantity, r.comment, r.event_id, e.date
+        FROM reservations as r, events as e
+        WHERE r.id = ? AND r.event_id = e.id
     ''', (reservation_id,))
     reservation = cursor.fetchone()
     db.close()
@@ -117,7 +160,7 @@ async def update_reservation(reservation_id: int, reservation: Reservation, user
     db, cursor = get_db()
     cursor.execute('''
         UPDATE reservations
-        SET name = ?, quantity = ?, comment = ?, date = ?
+        SET name = ?, quantity = ?, comment = ?, event_id = (SELECT id FROM events WHERE date = ?)
         WHERE id = ?
     ''', (reservation.name, reservation.quantity, reservation.comment, reservation.date, reservation_id))
     db.commit()
@@ -139,9 +182,9 @@ async def delete_reservation(reservation_id: int, username: str = Depends(get_cu
 async def get_reservations_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT id, name, quantity, comment, date
-        FROM reservations
-        WHERE date = ?
+        SELECT r.id, r.name, r.quantity, r.comment, r.event_id, e.date
+        FROM reservations as r, events as e
+        WHERE e.date = ? AND r.event_id = e.id
     ''', (date,))
     reservations = cursor.fetchall()
     db.close()
@@ -149,19 +192,15 @@ async def get_reservations_by_date(date: str, username: str = Depends(get_curren
 
 @app.get("/reservations/summary/", summary="Get a summary of reservations")
 async def get_summary(start_date: str, end_date: str, username: str = Depends(get_current_username)):
-    print("start")
     db, cursor = get_db()
-    print("db")
     cursor.execute('''
-        SELECT date, COUNT(*) as num_reservations
-        FROM reservations, events
-        WHERE date BETWEEN ? AND ?
+        SELECT e.date, COUNT(*) as num_reservations
+        FROM reservations as r, events as e
+        WHERE date BETWEEN ? AND ? AND r.event_id = e.id
         GROUP BY date
     ''', (start_date, end_date))
     summary = cursor.fetchall()
-    print("fetch")
     db.close()
-    print("close")
     return summary
 
 @app.post("/events/", summary="Create a new event")
@@ -176,10 +215,32 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
     
     db, cursor = get_db()
     try:
+        cursor.execute('''SELECT date from events WHERE date = ?''', (date,))
+        if cursor.fetchone() is not None:
+            print("Date exists")
+            raise sqlite3.IntegrityError
+        artist_id = None
+
+        # Check if artist exists
         cursor.execute('''
-            INSERT INTO events (date, event_kind, moderator)
+            SELECT id FROM artists WHERE name = ?
+        ''', (event.moderator,))
+        result = cursor.fetchone()
+        print(result)
+        if result is not None:
+            artist_id = result.get("id")
+        else:
+            # Create a new artist
+            cursor.execute('''
+                INSERT INTO artists (name) VALUES (?)
+            ''', (event.moderator,))
+            artist_id = cursor.lastrowid
+
+        # Insert event with artist.id as moderator
+        cursor.execute('''
+            INSERT INTO events (date, event_kind, moderator_id)
             VALUES (?, ?, ?)
-        ''', (date, event.event_kind, event.moderator))
+        ''', (date, event.event_kind, artist_id))
         db.commit()
     except sqlite3.IntegrityError:
         db.close()
@@ -191,11 +252,11 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.date, e.event_kind, e.moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
-        FROM events e
-        LEFT JOIN reservations r ON e.date = r.date
-        WHERE e.date = ?
-        GROUP BY e.date, e.event_kind, e.moderator
+        SELECT e.date, e.event_kind, a.name as moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
+        FROM events e, artists a
+        LEFT JOIN reservations r ON e.id = r.event_id
+        WHERE e.date = ? AND e.moderator_id = a.id
+        GROUP BY e.date, e.event_kind, e.moderator_id
     ''', (date,))
     event = cursor.fetchone()
     db.close()
@@ -212,11 +273,27 @@ async def update_event(date: str, event: Event, username: str = Depends(get_curr
         raise HTTPException(status_code=400, detail="Invalid event kind")
     
     db, cursor = get_db()
+
+    # Check if artist exists
+    artist_id = None
+    cursor.execute('''
+        SELECT id FROM artists WHERE name = ?
+    ''', (event.moderator,))
+    result = cursor.fetchone()
+    if result is not None:
+        artist_id = result
+    else:
+        # Create a new artist
+        cursor.execute('''
+            INSERT INTO artists (name) VALUES (?)
+        ''', (event.moderator,))
+        artist_id = cursor.lastrowid
+
     cursor.execute('''
         UPDATE events
-        SET event_kind = ?, moderator = ?
+        SET event_kind = ?, moderator_id = ?
         WHERE date = ?
-    ''', (event.event_kind, event.moderator, date))
+    ''', (event.event_kind, artist_id, date))
     db.commit()
     db.close()
     return {"message": "Event updated"}
@@ -244,10 +321,10 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.date, e.event_kind, e.moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
-        FROM events e
-        LEFT JOIN reservations r ON e.date = r.date
-        WHERE 1=1
+        SELECT e.date, e.event_kind, a.name as moderator, COALESCE(SUM(r.quantity), 0) as num_reservations
+        FROM events e, artists a
+        LEFT JOIN reservations r ON e.id = r.event_id
+        WHERE e.moderator_id = a.id
     '''
     params = []
     if start_date is not None:
@@ -257,7 +334,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
         query += ' AND e.date <= ?'
         params.append(end_date)
     
-    query += ' GROUP BY e.date, e.event_kind, e.moderator'
+    query += 'GROUP BY e.id'
     
     cursor.execute(query, params)
     events = cursor.fetchall()
@@ -291,6 +368,64 @@ async def get_previous_event(date: str, username: str = Depends(get_current_user
     event = cursor.fetchone()
     db.close()
     return event
+
+@app.get("/artists/", summary="Get all artists")
+async def get_all_artists(username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id, name, description, description_short, image, website
+        FROM artists
+    ''')
+    artists = cursor.fetchall()
+    db.close()
+    return artists
+
+@app.get("/artists/{artist_id}", summary="Get an artist by ID")
+async def get_artist_by_id(artist_id: int, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id, name, description, description_short, image, website
+        FROM artists
+        WHERE id = ?
+    ''', (artist_id,))
+    artist = cursor.fetchone()
+    db.close()
+    return artist
+
+@app.post("/artists/", summary="Create a new artist")
+async def create_artist(artist: Artist, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        INSERT INTO artists (name, description, description_short, image, website)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (artist.name, artist.description, artist.description_short, artist.image, artist.website))
+    artist_id = cursor.lastrowid
+    db.commit()
+    db.close()
+    return {"message": "Artist created", "artist_id": artist_id}
+
+@app.put("/artists/{artist_id}", summary="Update an artist")
+async def update_artist(artist_id: int, artist: Artist, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE artists
+        SET name = ?, description = ?, description_short = ?, image = ?, website = ?
+        WHERE id = ?
+    ''', (artist.name, artist.description, artist.description_short, artist.image, artist.website, artist_id))
+    db.commit()
+    db.close()
+    return {"message": "Artist updated"}
+
+@app.delete("/artists/{artist_id}", summary="Delete an artist")
+async def delete_artist(artist_id: int, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        DELETE FROM artists
+        WHERE id = ?
+    ''', (artist_id,))
+    db.commit()
+    db.close()
+    return {"message": "Artist deleted"}
 
 if __name__ == "__main__":
     import uvicorn
