@@ -72,10 +72,10 @@ async def overview_page(session):
                 if month_select.value is None:
                     month_select.set_value(1)
                     year_select.set_value(year_select.value + 1)
-            ui.button(icon="arrow_back", on_click=back).classes("my-auto rounded-full")
+            ui.button(icon="arrow_back", on_click=back).classes("my-auto")
             month_select = ui.select(months, label="Monat", value = datetime.datetime.now().month, on_change=on_selection_change).style("width: 50%;")
             year_select = ui.select(years, label="Jahr", value = datetime.datetime.now().year, on_change=on_selection_change).style("width: 50%;")
-            ui.button(icon="arrow_forward", on_click=forward).classes("my-auto rounded-full")
+            ui.button(icon="arrow_forward", on_click=forward).classes("my-auto")
             # TODO: forward and backward buttons to change months
         
         data = []
