@@ -1,3 +1,5 @@
+#TODO: clearly mark how many reservations
+
 from nicegui import ui
 import datetime
 from datetime import timedelta

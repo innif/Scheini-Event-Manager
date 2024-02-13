@@ -85,7 +85,7 @@ async def overview_page(session):
             """)
             table.add_slot(f'body-cell-num_reservations', """
                 <q-td :props="props">
-                    <q-badge :color="props.value < 52 ? 'green' : 'red'">
+                    <q-badge :color="props.value < 40 ? 'green' : (props.value < 52 ? 'orange' : 'red')">
                         {{ props.value }}
                     </q-badge>
                     <q-btn @click="$parent.$emit('add', props)" icon="add" flat dense color='green'/>
