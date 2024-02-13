@@ -281,7 +281,7 @@ async def update_event(date: str, event: Event, username: str = Depends(get_curr
     ''', (event.moderator,))
     result = cursor.fetchone()
     if result is not None:
-        artist_id = result
+        artist_id = result.get("id")
     else:
         # Create a new artist
         cursor.execute('''
