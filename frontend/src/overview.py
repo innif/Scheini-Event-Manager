@@ -5,14 +5,6 @@ from dialogs import edit_reservation_dialog, loading_dialog, edit_event_dialog
 from util import api_call
 import asyncio
 
-columns = [
-    {'name': 'event_kind', 'label': 'Art', 'field': 'event_kind', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'num_reservations', 'label': 'Reservierungen', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
-    {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
-]
 months = {
     1: "Januar",
     2: "Februar",
@@ -31,6 +23,13 @@ years = [datetime.datetime.now().year + i for i in range(-1, 3)]
 month_select = None
 year_select = None
 
+async def get_screen_width():
+    try:
+        return await ui.run_javascript("window.innerWidth")
+    except Exception as e:
+        print(e)
+        return 1920
+
 async def get_data(session, month, year, past_events = False):
     start = datetime.date(year, month, 1)
     if not past_events:
@@ -41,6 +40,7 @@ async def get_data(session, month, year, past_events = False):
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
         r['date_str'] = date.strftime("%d.%m.%Y")
+        r['date_str_short'] = date.strftime("%a %d.%m.%y")
         r['weekday'] = date.strftime("%A")
     return res
 
@@ -58,6 +58,8 @@ async def overview_page(session):
         d = await edit_event_dialog(session)
         if await d:
             await on_selection_change()
+
+    columns = []
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.card().classes("w-full"), ui.row(wrap=False).classes('w-full'):
@@ -94,4 +96,21 @@ async def overview_page(session):
             table.on('action', lambda msg: print(msg))
             table.on('add', lambda msg: add_reservation(msg.args['row']['date']))
             table.on('edit', lambda msg: ui.open('/event/' + msg.args['row']['date']))
+    w = await get_screen_width()
+    columns = [
+        {'name': 'event_kind', 'label': 'Art', 'field': 'event_kind', 'required': True, 'align': 'left', 'sortable': True, 
+         'classes': 'hidden' if w < 500 else '', 'headerClasses': 'hidden' if w < 500 else ''},
+        {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True, 
+         'classes': 'hidden' if w < 500 else '', 'headerClasses': 'hidden' if w < 500 else ''},
+        {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True, 
+         'classes': 'hidden' if w < 500 else '', 'headerClasses': 'hidden' if w < 500 else ''},
+        {'name': 'date_str_short', 'label': 'Datum kurz', 'field': 'date_str_short', 'required': True, 'align': 'left', 'sortable': True, 
+         'classes': '' if w < 500 else 'hidden', 'headerClasses': '' if w < 500 else 'hidden'},
+        {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True, 
+         'classes': 'hidden' if w < 500 else '', 'headerClasses': 'hidden' if w < 500 else ''},
+        {'name': 'num_reservations', 'label': 'Reservierungen', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
+        {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
+    ]
+    print("Width: ", w)
+    table.update()
     ui.timer(0.1, on_selection_change, once = True)
