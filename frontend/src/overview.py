@@ -115,7 +115,7 @@ async def overview_page(session):
                     <q-badge :color="props.value >= 8 ? 'negative' : (props.value < 4 ? 'warning' : 'positive')">
                         {{ props.value }}
                     </q-badge>
-                    <q-btn @click="$parent.$emit('add_artist', props)" icon="add" flat dense my-auto color='positive'/>
+                    <q-btn @click="$parent.$emit('add_artist', props)" icon="edit" flat dense my-auto color='positive'/>
                 </q-td>
             """)
             table.on('action', lambda msg: print(msg))
