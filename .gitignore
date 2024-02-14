@@ -10,3 +10,5 @@ db-service/db/database.db
 *.db
 
 frontend/.nicegui/
+
+letsencrypt/
