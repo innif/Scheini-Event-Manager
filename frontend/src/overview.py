@@ -6,7 +6,6 @@ from util import api_call
 import asyncio
 
 columns = [
-    {'name': 'event_kind', 'label': 'Art', 'field': 'event_kind', 'required': True, 'align': 'left', 'sortable': True},
 #    {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True},
@@ -92,9 +91,10 @@ async def overview_page(session):
             ui.button(icon="refresh", on_click=on_selection_change)
             ui.button(on_click=lambda: (app.storage.user.clear(), ui.open('/login')), icon='logout', color = 'negative')
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
-            table.add_slot(f'body-cell-event_kind', """
+            table.add_slot(f'body-cell-moderator', """
                 <q-td :props="props">
-                    <q-btn :icon="props.value == 'open_stage' ? 'mic_external_on' : 'person'" flat dense/>
+                    <q-btn :icon="props.row.event_kind == 'open_stage' ? 'mic_external_on' : 'person'" flat dense/>
+                    {{ props.value }}
                 </q-td>
             """)
             table.add_slot(f'body-cell-buttons', """
