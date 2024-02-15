@@ -59,6 +59,7 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
             save_button = ui.button('Speichern', on_click=save)
     return dialog
 
+#TODO edit comment
 async def edit_event_dialog(session, date = None, moderator = "", event_kind = "open_stage"):
     res = None
     if date is not None:

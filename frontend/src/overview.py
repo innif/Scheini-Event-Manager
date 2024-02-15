@@ -93,7 +93,7 @@ async def overview_page(session):
             """)
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
-                    <q-btn @click="$parent.$emit('edit', props)" icon="edit" dense flat color='primary'/>
+                    <q-btn @click="$parent.$emit('edit', props)" icon="visibility" dense flat color='primary'/>
                 </q-td>
             """)
             table.add_slot(f'body-cell-num_reservations', """
@@ -107,4 +107,5 @@ async def overview_page(session):
             table.on('action', lambda msg: print(msg))
             table.on('add', lambda msg: add_reservation(msg.args['row']['date']))
             table.on('edit', lambda msg: ui.open('/event/' + msg.args['row']['date']))
+            #table.on('row-click', lambda msg: print(msg.args))
     ui.timer(0.1, on_selection_change, once = True)
