@@ -85,14 +85,27 @@ async def edit_bookings_dialog(session, date):
     async def update_artists():
         table.rows = await api_call(session, f"artists/event/{date}")
         table.update()
-    with ui.dialog() as dialog, ui.card():
+    async def update_comment(msg):
+        artist_id = msg.args['row']['id']
+        comment = msg.args['row']['comment']
+        if comment is None:
+            comment = ""
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist_id={artist_id}&comment={comment}', method="PUT")
+        ui.notify("Kommentar gespeichert")
+    with ui.dialog().props('persistent') as dialog, ui.card():
         table = ui.table(columns=columns_artists, rows=artists).classes('w-full')
         table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
                     <q-btn @click="$parent.$emit('delete', props)" icon="delete" dense flat color='primary'/>
                 </q-td>
             """)
+        table.add_slot(f'body-cell-comment', """
+                <q-td :props="props">
+                    <q-input @blur="$parent.$emit('comment', props)" dense flat v-model="props.row.comment"/>
+                </q-td>
+            """)
         table.on('delete', delete)
+        table.on('comment', update_comment)
         with ui.row().classes('w-full no-wrap'):
             new_artist = ui.input('Künstler*in hinzufügen').classes('w-full')
             ui.space()

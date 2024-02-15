@@ -430,7 +430,7 @@ async def delete_artist(artist_id: int, username: str = Depends(get_current_user
 async def get_artists_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT a.id, a.name, a.description, a.description_short, a.image, a.website
+        SELECT a.id, a.name, a.description, a.description_short, a.image, a.website, b.comment
         FROM artists a, bookings b, events e
         WHERE e.date = ? AND e.id = b.event_id AND a.id = b.artist_id
     ''', (date,))
@@ -471,6 +471,18 @@ async def delete_booking(event_id: int, artist_id: int, username: str = Depends(
     db.commit()
     db.close()
     return {"message": "Booking deleted"}
+
+@app.put("/bookings/", summary="Update a booking")
+async def update_booking(event_id: int, artist_id: int, comment: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE bookings
+        SET comment = ?
+        WHERE event_id = ? AND artist_id = ?
+    ''', (comment, event_id, artist_id))
+    db.commit()
+    db.close()
+    return {"message": "Booking updated"}
 
 if __name__ == "__main__":
     import uvicorn
