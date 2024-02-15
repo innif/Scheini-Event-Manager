@@ -22,6 +22,8 @@ ENV LANG de_DE.UTF-8
 ENV LANGUAGE de_DE.UTF-8  
 ENV LC_ALL de_DE.UTF-8 
 
+COPY ./requirements.txt ./requirements.txt
+
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
@@ -31,8 +33,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install -r requirements.txt
 
 # Copy the source code into the container.
+COPY ./secrets.json ./secrets.json
 COPY ./src /app
-COPY . .
 
 # Expose the port that the application listens on.
 EXPOSE 80
