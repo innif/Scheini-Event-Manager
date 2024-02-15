@@ -3,7 +3,7 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
-from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog
+from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog
 from util import event_types, api_call
 
 columns = [
@@ -43,6 +43,8 @@ async def detail_page(session, date: str):
         table.rows = data.get('reservations')
         event = data.get('event')
         event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator') + " - " + str(event.get("num_reservations")) + " Reservierungen")
+        reservation_label.set_text("Reservierungen: " + str(event.get("num_reservations")))
+        artist_label.set_text("Künstler*innen: " + str(event.get("num_artists")))
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.row(wrap=False).classes('w-full'):
@@ -58,6 +60,14 @@ async def detail_page(session, date: str):
             ui.button(icon="arrow_forward", on_click=next_event)
         ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
         event_label = ui.label().style("width: 100%; height: 100%; text-align: center")
+        async def edit_artists():
+            d = await edit_bookings_dialog(session, date=date)
+            await d
+            await generate_overview()
+        with ui.row(wrap=False).classes('w-full'):
+            artist_label = ui.label(f"Künstler*innen: ...").classes("text-xl")
+            ui.space()
+            ui.button(icon="edit", on_click=edit_artists)
         with ui.row(wrap=False).classes('w-full'):
             async def add_reservation():
                 d = await edit_reservation_dialog(session, date=date)
@@ -70,7 +80,7 @@ async def detail_page(session, date: str):
                     await generate_overview()
                 if result == 'delete':
                     ui.open('/')
-            ui.label("Reservierungen").classes("text-xl")
+            reservation_label = ui.label(f"Reservierungen: ...").classes("text-xl")
             ui.space()
             ui.button(icon="add", on_click=add_reservation, color="positive")
             ui.button(icon="refresh", on_click=generate_overview)

@@ -66,6 +66,9 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
     return dialog
 
 async def edit_bookings_dialog(session, date):
+    #TODO suggest artists when typing
+    #TODO Technician field
+    #TODO comment field
     event = await api_call(session, f"events/{date}")
     artists = await api_call(session, f"artists/event/{date}")
     async def delete(msg):
