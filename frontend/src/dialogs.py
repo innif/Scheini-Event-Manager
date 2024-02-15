@@ -97,6 +97,7 @@ async def edit_bookings_dialog(session, date):
         ui.button('Schließen', on_click=dialog.submit).classes('w-full')
     return dialog
 
+#TODO edit comment
 async def edit_event_dialog(session, date = None, moderator = "", event_kind = "open_stage"):
     res = None
     if date is not None:
