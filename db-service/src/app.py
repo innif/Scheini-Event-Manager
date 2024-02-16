@@ -58,7 +58,10 @@ async def startup_event():
             date DATE,
             event_kind TEXT CHECK( event_kind IN ('open_stage', 'solo', 'other') ) NOT NULL,
             moderator_id INTEGER REFERENCES artists(id) ON DELETE SET NULL,
-            description TEXT
+            description TEXT,
+            description_short TEXT,
+            image TEXT,
+            comment TEXT
         )
     ''')
     cursor.execute('''
@@ -77,6 +80,24 @@ async def startup_event():
             artist_id INTEGER REFERENCES artists(id),
             comment TEXT,
             PRIMARY KEY (event_id, artist_id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            username TEXT,
+            password TEXT,
+            roles LIST TEXT CHECK( roles IN ('technik', 'tresen', 'etc') ) NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS works_at (
+            employee_id INTEGER REFERENCES employees(id),
+            event_id INTEGER REFERENCES events(id),
+            role TEXT CHECK( role IN ('technik', 'tresen', 'etc') ) NOT NULL,
+            PRIMARY KEY (employee_id, event_id)
         )
     ''')
     db.commit()
