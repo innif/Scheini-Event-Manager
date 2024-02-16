@@ -85,12 +85,16 @@ async def edit_bookings_dialog(session, date):
         table.rows = await api_call(session, f"artists/event/{date}")
         table.update()
     async def update_comment(msg):
-        artist_id = msg.args['row']['id']
-        comment = msg.args['row']['comment']
+        artist_id = msg.args['id']
+        comment = msg.args['comment']
         if comment is None:
             comment = ""
         await api_call(session, f'bookings/?event_id={event.get("id")}&artist_id={artist_id}&comment={comment}', method="PUT")
         ui.notify("Kommentar gespeichert")
+    async def load_auto_complete():
+        options = await api_call(session, "artists/")
+        options = [o.get('name') for o in options]
+        new_artist.set_autocomplete(options)
     with ui.dialog() as dialog, ui.card():
         table = ui.table(columns=columns_artists, rows=artists).classes('w-full')
         table.add_slot(f'body-cell-buttons', """
@@ -101,17 +105,21 @@ async def edit_bookings_dialog(session, date):
         table.add_slot(f'body-cell-comment', """
                 <q-td :props="props">
                     {{ props.row.comment }}
-                    <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons @save="$parent.$emit('comment', props)">
+                    <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons 
+                       @update:model-value="() => $parent.$emit('comment', props.row)"
+                    >
                         <q-input v-model="scope.value" dense autofocus counter/>
                     </q-popup-edit>
                 </q-td>
             """)
         table.on('delete', delete)
+        table.on('comment', update_comment)
         with ui.row().classes('w-full no-wrap'):
             new_artist = ui.input('Künstler*in hinzufügen').classes('w-full')
             ui.space()
             ui.button(icon="add", on_click=add_artist, color="positive").classes("rounded-full my-auto flat")
         ui.button('Schließen', on_click=dialog.submit).classes('w-full')
+    ui.timer(0.1, load_auto_complete, once=True)
     return dialog
 
 #TODO edit comment

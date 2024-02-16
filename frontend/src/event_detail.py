@@ -17,6 +17,7 @@ columns = [
 async def print_page(session, date: str):
     date_str = datetime.date.fromisoformat(date).strftime("%A, %d.%m.%Y")
     reservations = await api_call(session, "reservations/date/" + date)
+    artists = await api_call(session, "artists/event/" + date)
     ui.label(date_str).classes("text-xl")
     with ui.column():
         for r in reservations:
@@ -26,8 +27,15 @@ async def print_page(session, date: str):
                 ui.space()
                 ui.label(str(r['quantity']) + "x")
             ui.separator()
+    ui.label("Künstler*innen:").classes("text-lg")
+    with ui.row().classes("w-full"):
+        for a in artists:
+            ui.label(a['name'])
+            if a['comment'] is not None and a['comment'] != "":
+                ui.label(a['comment']).classes("text-sm italic").style("color: grey")
+            ui.label(" | ")
     ui.run_javascript("window.print()")
-    ui.timer(0.1, lambda: ui.run_javascript("window.close()"), once=True)
+    ui.timer(0.5, lambda: ui.run_javascript("window.close()"), once=True)
 
 async def get_event_data(session, date: str):
     data = {}
