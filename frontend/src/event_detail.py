@@ -5,12 +5,13 @@ from nicegui import ui
 import datetime
 from datetime import timedelta
 from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog
-from util import event_types, api_call
+from util import event_types, api_call, breakpoint
 
 columns = [
     {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left', 'sortable': True},
     {'name': 'quantity', 'label': 'Anzahl', 'field': 'quantity', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'required': True, 'align': 'left'},
+    {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'required': True, 'align': 'left', 
+     'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden')},
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
 
@@ -42,6 +43,7 @@ async def get_event_data(session, date: str):
     data['reservations'] = await api_call(session, "reservations/date/" + date) # session.get("http://localhost:8000/reservations/date/" + date).json()
     data['event'] = await api_call(session, "events/" + date)
     data['event']['date-str'] = datetime.date.fromisoformat(data['event']['date']).strftime("%A, %d.%m.%Y")
+    data['artists'] = await api_call(session, "artists/event/" + date)
     return data
 
 async def detail_page(session, date: str):
@@ -93,13 +95,13 @@ async def detail_page(session, date: str):
         with ui.row().classes('w-full'):
             artist_label = ui.label(f"Künstler*innen: ...").classes("text-xl")
             ui.space()
-            ui.button(icon="edit", on_click=edit_artists)
-            #TODO table for artists
+            ui.button(icon="theater_comedy", on_click=edit_artists)
+            #TODO chips for artists
         with ui.row().classes('w-full'):
             reservation_label = ui.label(f"Reservierungen: ...").classes("text-xl")
             ui.space()
-            ui.button(icon="add", on_click=add_reservation, color="positive")
-        with ui.table(columns, rows=[{'name': 'Name', 'quantity': 'Anzahl', 'comment': 'Kommentar'}]).classes('w-full bordered') as table:
+            ui.button(icon="group_add", on_click=add_reservation, color="positive")
+        with ui.table(columns, rows=[]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
                     <q-btn @click="$parent.$emit('edit', props)" icon="edit" flat dense color='primary'/>
