@@ -122,6 +122,10 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
     if res is not None:
         event_kind = res.get('event_kind')
         moderator = res.get('moderator')
+    async def load_auto_complete():
+        options = await api_call(session, "artists/")
+        options = [o.get('name') for o in options]
+        moderator_input.set_autocomplete(options)
     async def delete():
         d = confirm_dialog('Event löschen', 'Soll das Event wirklich gelöscht werden?')
         if await d:
@@ -158,4 +162,5 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         with ui.row().classes('w-full'):
             cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(None))
             save_button = ui.button('Speichern', on_click=save)
+    ui.timer(0.1, load_auto_complete, once=True)
     return dialog

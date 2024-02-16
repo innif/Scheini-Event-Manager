@@ -53,8 +53,10 @@ def get_secrets():
     
 secrets = get_secrets()
 
-async def api_call(session, path: str, method = "GET", json = None):
-    dialog = dialogs.loading_dialog()
+async def api_call(session, path: str, method = "GET", json = None, silent = False):
+    dialog = None
+    if not silent:
+        dialog = dialogs.loading_dialog()
     auth = HTTPBasicAuth(app.storage.user.get("api-user"), app.storage.user.get("api-pswd"))
     res = None
     if method == "GET":
@@ -68,5 +70,6 @@ async def api_call(session, path: str, method = "GET", json = None):
     if res.status_code != 200:
         ui.notify("Fehler bei der Anfrage", color="negative")
         ui.notify(res.text, color="negative")
-    dialog.close()
+    if not silent:
+        dialog.close()
     return res.json()
