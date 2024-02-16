@@ -33,8 +33,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # USER appuser
 
 # Copy the source code into the container.
-COPY ./src /app
 COPY ./secrets.json /app/secrets.json
+COPY ./src /app
 # COPY . .
 
 # Expose the port that the application listens on.

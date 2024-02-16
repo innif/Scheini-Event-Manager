@@ -58,7 +58,10 @@ async def startup_event():
             date DATE,
             event_kind TEXT CHECK( event_kind IN ('open_stage', 'solo', 'other') ) NOT NULL,
             moderator_id INTEGER REFERENCES artists(id) ON DELETE SET NULL,
-            description TEXT
+            description TEXT,
+            description_short TEXT,
+            image TEXT,
+            comment TEXT
         )
     ''')
     cursor.execute('''
@@ -77,6 +80,24 @@ async def startup_event():
             artist_id INTEGER REFERENCES artists(id),
             comment TEXT,
             PRIMARY KEY (event_id, artist_id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            username TEXT,
+            password TEXT,
+            roles LIST TEXT CHECK( roles IN ('technik', 'tresen', 'etc') ) NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS works_at (
+            employee_id INTEGER REFERENCES employees(id),
+            event_id INTEGER REFERENCES events(id),
+            role TEXT CHECK( role IN ('technik', 'tresen', 'etc') ) NOT NULL,
+            PRIMARY KEY (employee_id, event_id)
         )
     ''')
     db.commit()
@@ -252,12 +273,10 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.date, e.event_kind, a.name as moderator, COALESCE(SUM(r.quantity), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
+        SELECT e.id, e.date, e.event_kind, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
         FROM events e, artists a
-        LEFT JOIN reservations r ON e.id = r.event_id
         LEFT JOIN bookings b ON e.id = b.event_id
-        WHERE e.date = ? AND e.moderator_id = a.id
-        GROUP BY e.date, e.event_kind, e.moderator_id
+        WHERE e.moderator_id = a.id AND e.date = ?
     ''', (date,))
     event = cursor.fetchone()
     db.close()
@@ -322,9 +341,8 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.date, e.event_kind, a.name as moderator, COALESCE(SUM(r.quantity), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
+        SELECT e.id, e.date, e.event_kind, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
         FROM events e, artists a
-        LEFT JOIN reservations r ON e.id = r.event_id
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id
     '''
@@ -429,17 +447,63 @@ async def delete_artist(artist_id: int, username: str = Depends(get_current_user
     db.close()
     return {"message": "Artist deleted"}
 
-@app.get("/artists/{date}", summary="Get all artists for a specific date")
+@app.get("/artists/event/{date}", summary="Get all artists for a specific date")
 async def get_artists_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT a.id, a.name, a.description, a.description_short, a.image, a.website
+        SELECT a.id, a.name, a.description, a.description_short, a.image, a.website, b.comment
         FROM artists a, bookings b, events e
         WHERE e.date = ? AND e.id = b.event_id AND a.id = b.artist_id
     ''', (date,))
     artists = cursor.fetchall()
     db.close()
     return artists
+
+@app.post("/bookings/", summary="Create a new booking")
+async def create_booking(event_id: int, artist: str, comment: Optional[str] = None, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id FROM artists WHERE name = ?
+    ''', (artist,))
+    artist_id = cursor.fetchone()
+    if artist_id is None:
+        # create artist
+        cursor.execute('''
+            INSERT INTO artists (name) VALUES (?)
+        ''', (artist,))
+        artist_id = cursor.lastrowid
+    else:
+        artist_id = artist_id.get("id")
+    cursor.execute('''
+        INSERT INTO bookings (event_id, artist_id, comment)
+        VALUES (?, ?, ?)
+    ''', (event_id, artist_id, comment))
+    db.commit()
+    db.close()
+    return {"message": "Booking created"}
+
+@app.delete("/bookings/", summary="Delete a booking")
+async def delete_booking(event_id: int, artist_id: int, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        DELETE FROM bookings
+        WHERE event_id = ? AND artist_id = ?
+    ''', (event_id, artist_id))
+    db.commit()
+    db.close()
+    return {"message": "Booking deleted"}
+
+@app.put("/bookings/", summary="Update a booking")
+async def update_booking(event_id: int, artist_id: int, comment: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE bookings
+        SET comment = ?
+        WHERE event_id = ? AND artist_id = ?
+    ''', (comment, event_id, artist_id))
+    db.commit()
+    db.close()
+    return {"message": "Booking updated"}
 
 if __name__ == "__main__":
     import uvicorn
