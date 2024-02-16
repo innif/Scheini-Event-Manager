@@ -6,16 +6,43 @@ import json
 import datetime
 from requests.auth import HTTPBasicAuth
 
+class MediaBreakpoints:
+    def __init__(self):
+        self.xs = 0
+        self.sm = 576
+        self.md = 768
+        self.lg = 992
+        self.xl = 1200
+
 event_types = {
     "open_stage": "Open Stage",
     "solo": "Solo",
     "other": "Sonstiges"
 }
 
-
 # key = None
 session = requests.Session()
 url = "http://db:5000/"
+
+def breakpoint(size, css_class, max=True):
+    '''Returns a string that can be used in the classes attribute of a ui element to apply a css class only on a certain breakpoint
+    size: str, one of "xs", "sm", "md", "lg", "xl"
+    css_class: str or list of str, the css class(es) to apply
+    max: bool, if True the class is applied only on screens smaller than the given breakpoint, if False only on screens larger than the given breakpoint'''
+    width = getattr(MediaBreakpoints(), size)
+    if type(css_class) == list:
+        breakpoint = ""
+        for css in css_class:
+            if max:
+                breakpoint += f"max-[{width}px]:{css} "
+            else:
+                breakpoint += f"min-[{width}px]:{css} "
+    else:
+        if max:
+            breakpoint = f"max-[{width}px]:{css_class}"
+        else:
+            breakpoint = f"min-[{width}px]:{css_class}"
+    return breakpoint
 
 def get_secrets():
     try:

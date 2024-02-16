@@ -2,13 +2,18 @@ from nicegui import ui, app
 import datetime
 from datetime import timedelta
 from dialogs import edit_reservation_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog
-from util import api_call
+from util import api_call, breakpoint
 import asyncio
 
 columns = [
-#    {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True},
-    {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True},
+    {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True, 
+     'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden')},
+    {'name': 'date_str', 'label': 'Datum', 'field': 'date_str', 'required': True, 'align': 'left', 'sortable': True,
+     'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden')},
+    {'name': 'date_str_short', 'label': 'Datum', 'field': 'date_str_short', 'required': True, 'align': 'left', 'sortable': True,
+     'classes': breakpoint('md', 'hidden', False), 'headerClasses': breakpoint('md', 'hidden', False)},
+    {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True,
+     'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden')},
     {'name': 'num_reservations', 'label': 'Reserv.', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'num_artists', 'label': 'Künstl.', 'field': 'num_artists', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
@@ -41,7 +46,8 @@ async def get_data(session, month, year, past_events = False):
     res = await api_call(session, "events/?start_date=" + start + "&end_date=" + end)
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
-        r['date_str'] = date.strftime("%d.%m.%Y (%a)")
+        r['date_str'] = date.strftime("%d.%m.%Y")
+        r['date_str_short'] = date.strftime("%d.%m.%y (%a)")
         r['weekday'] = date.strftime("%A")
     return res
 
