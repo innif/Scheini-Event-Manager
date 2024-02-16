@@ -1,4 +1,3 @@
-#TODO: clearly mark how many reservations
 #TODO: section for reservations & artists
 #TODO: popup editing for reservations
 
@@ -76,18 +75,19 @@ async def detail_page(session, date: str):
                 await generate_overview()
             if result == 'delete':
                 ui.open('/')
-        with ui.row(wrap=False).classes('w-full'):
+        with ui.row().classes('w-full'):
             event_label = ui.label().classes("text-xl")
             ui.space()
-            ui.button(icon="refresh", on_click=generate_overview)
-            ui.button(icon="edit", on_click=edit_event)
-            ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
-        with ui.row(wrap=False).classes('w-full'):
+            with ui.row(wrap=False):
+                ui.button(icon="refresh", on_click=generate_overview)
+                ui.button(icon="edit", on_click=edit_event)
+                ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
+        with ui.row().classes('w-full'):
             artist_label = ui.label(f"Künstler*innen: ...").classes("text-xl")
             ui.space()
             ui.button(icon="edit", on_click=edit_artists)
             #TODO table for artists
-        with ui.row(wrap=False).classes('w-full'):
+        with ui.row().classes('w-full'):
             reservation_label = ui.label(f"Reservierungen: ...").classes("text-xl")
             ui.space()
             ui.button(icon="add", on_click=add_reservation, color="positive")
