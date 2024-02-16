@@ -44,7 +44,7 @@ async def detail_page(session, date: str):
         data = await get_event_data(session, date)
         table.rows = data.get('reservations')
         event = data.get('event')
-        event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator') + " - " + str(event.get("num_reservations")) + " Reservierungen")
+        event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator'))
         reservation_label.set_text("Reservierungen: " + str(event.get("num_reservations")))
         artist_label.set_text("Künstler*innen: " + str(event.get("num_artists")))
 
@@ -61,33 +61,36 @@ async def detail_page(session, date: str):
                 ui.label(date_str).classes("text-xl").style("width: 100%; height: 100%; text-align: center;")
             ui.button(icon="arrow_forward", on_click=next_event)
         ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
-        event_label = ui.label().style("width: 100%; height: 100%; text-align: center")
         async def edit_artists():
             d = await edit_bookings_dialog(session, date=date)
             await d
             await generate_overview()
+        async def add_reservation():
+            d = await edit_reservation_dialog(session, date=date)
+            if await d:
+                await generate_overview()
+        async def edit_event():
+            d = await edit_event_dialog(session, date=date)
+            result = await d
+            if result == 'edit':
+                await generate_overview()
+            if result == 'delete':
+                ui.open('/')
+        with ui.row(wrap=False).classes('w-full'):
+            event_label = ui.label().classes("text-xl")
+            ui.space()
+            ui.button(icon="refresh", on_click=generate_overview)
+            ui.button(icon="edit", on_click=edit_event)
+            ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
         with ui.row(wrap=False).classes('w-full'):
             artist_label = ui.label(f"Künstler*innen: ...").classes("text-xl")
             ui.space()
             ui.button(icon="edit", on_click=edit_artists)
+            #TODO table for artists
         with ui.row(wrap=False).classes('w-full'):
-            async def add_reservation():
-                d = await edit_reservation_dialog(session, date=date)
-                if await d:
-                    await generate_overview()
-            async def edit_event():
-                d = await edit_event_dialog(session, date=date)
-                result = await d
-                if result == 'edit':
-                    await generate_overview()
-                if result == 'delete':
-                    ui.open('/')
             reservation_label = ui.label(f"Reservierungen: ...").classes("text-xl")
             ui.space()
             ui.button(icon="add", on_click=add_reservation, color="positive")
-            ui.button(icon="refresh", on_click=generate_overview)
-            ui.button(icon="edit", on_click=edit_event)
-            ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
         with ui.table(columns, rows=[{'name': 'Name', 'quantity': 'Anzahl', 'comment': 'Kommentar'}]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">

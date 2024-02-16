@@ -68,7 +68,6 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
 async def edit_bookings_dialog(session, date):
     #TODO suggest artists when typing
     #TODO Technician field
-    #TODO comment field
     event = await api_call(session, f"events/{date}")
     artists = await api_call(session, f"artists/event/{date}")
     async def delete(msg):
@@ -92,7 +91,7 @@ async def edit_bookings_dialog(session, date):
             comment = ""
         await api_call(session, f'bookings/?event_id={event.get("id")}&artist_id={artist_id}&comment={comment}', method="PUT")
         ui.notify("Kommentar gespeichert")
-    with ui.dialog().props('persistent') as dialog, ui.card():
+    with ui.dialog() as dialog, ui.card():
         table = ui.table(columns=columns_artists, rows=artists).classes('w-full')
         table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">

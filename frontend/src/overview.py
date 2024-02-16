@@ -87,7 +87,6 @@ async def overview_page(session):
             month_select = ui.select(months, label="Monat", value = datetime.datetime.now().month, on_change=on_selection_change).style("width: 50%;")
             year_select = ui.select(years, label="Jahr", value = datetime.datetime.now().year, on_change=on_selection_change).style("width: 50%;")
             ui.button(icon="arrow_forward", on_click=forward).classes("my-auto")
-            # TODO: forward and backward buttons to change months
         
         data = []
         with ui.row(wrap=False).classes('w-full'): 
