@@ -1,4 +1,6 @@
 #TODO: clearly mark how many reservations
+#TODO: section for reservations & artists
+#TODO: popup editing for reservations
 
 from nicegui import ui
 import datetime

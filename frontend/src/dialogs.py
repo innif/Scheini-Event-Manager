@@ -101,11 +101,13 @@ async def edit_bookings_dialog(session, date):
             """)
         table.add_slot(f'body-cell-comment', """
                 <q-td :props="props">
-                    <q-input @blur="$parent.$emit('comment', props)" dense flat v-model="props.row.comment"/>
+                    {{ props.row.comment }}
+                    <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons @save="$parent.$emit('comment', props)">
+                        <q-input v-model="scope.value" dense autofocus counter/>
+                    </q-popup-edit>
                 </q-td>
             """)
         table.on('delete', delete)
-        table.on('comment', update_comment)
         with ui.row().classes('w-full no-wrap'):
             new_artist = ui.input('Künstler*in hinzufügen').classes('w-full')
             ui.space()
