@@ -78,7 +78,15 @@ async def edit_bookings_dialog(session, date):
             await api_call(session, "bookings/?event_id="+str(event.get("id"))+"&artist_id="+str(artist_id), "DELETE")
             await update_artists()
     async def add_artist():
-        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={new_artist.value}', method="POST")
+        if new_artist.value == "" or new_artist.value is None:
+            ui.notify('Künstler*in eingeben', color='negative')
+            return
+        artist_name: str = new_artist.value
+        artist_name = artist_name.strip()
+        if artist_name in [r.get("name") for r in table.rows]:
+            ui.notify('Künstler*in bereits eingetragen', color='negative')
+            return
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={artist_name}', method="POST")
         new_artist.value = ""
         await update_artists()
     async def update_artists():

@@ -418,7 +418,7 @@ async def create_artist(artist: Artist, username: str = Depends(get_current_user
     cursor.execute('''
         INSERT INTO artists (name, description, description_short, image, website)
         VALUES (?, ?, ?, ?, ?)
-    ''', (artist.name, artist.description, artist.description_short, artist.image, artist.website))
+    ''', (artist.name.strip(), artist.description.strip(), artist.description_short.strip(), artist.image.strip(), artist.website.strip()))
     artist_id = cursor.lastrowid
     db.commit()
     db.close()
@@ -431,7 +431,7 @@ async def update_artist(artist_id: int, artist: Artist, username: str = Depends(
         UPDATE artists
         SET name = ?, description = ?, description_short = ?, image = ?, website = ?
         WHERE id = ?
-    ''', (artist.name, artist.description, artist.description_short, artist.image, artist.website, artist_id))
+    ''', (artist.name.strip(), artist.description.strip(), artist.description_short.strip(), artist.image.strip(), artist.website.strip(), artist_id))
     db.commit()
     db.close()
     return {"message": "Artist updated"}
@@ -461,6 +461,7 @@ async def get_artists_by_date(date: str, username: str = Depends(get_current_use
 
 @app.post("/bookings/", summary="Create a new booking")
 async def create_booking(event_id: int, artist: str, comment: Optional[str] = None, username: str = Depends(get_current_username)):
+    artist = artist.strip()
     db, cursor = get_db()
     cursor.execute('''
         SELECT id FROM artists WHERE name = ?
