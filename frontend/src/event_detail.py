@@ -4,7 +4,7 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
-from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog
+from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog, edit_single_booking_dialog, add_booking_dialog
 from util import event_types, api_call, breakpoint
 
 columns = [
@@ -14,6 +14,31 @@ columns = [
      'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden')},
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
+
+def artist_chip(session, artist, event_id: int, on_change=None):
+    async def remove(msg):
+        d = confirm_dialog('Künstler*in löschen', 'Soll die Künstler*in wirklich gelöscht werden?')
+        if await d:
+            await api_call(session, "bookings/?event_id="+str(event_id)+"&artist_id="+str(artist.get('id')), "DELETE")
+            await on_change()
+    async def click(msg):
+        d = await edit_single_booking_dialog(session, artist, event_id)
+        if await d:
+            await on_change()
+    with ui.element('q-chip').props('clickable removable icon="person" @remove="$parent.$emit(\'remove\')" @click"$parent.$emit(\'click\') color="secondary" text-color="white"') as chip:
+        ui.label(artist.get('name'))
+        if artist.get('comment') is not None and artist.get('comment') != "":
+            ui.label(artist.get('comment')).classes("italic").props('color="white"').style("margin-left: 0.5em")
+            #ui.icon('notes', color='white')
+    chip.on('remove', remove)
+    chip.on('click', click)
+
+def add_artists_chips(session, artist_list, event_id: int, on_change=None):
+    if artist_list is None or len(artist_list) == 0:
+        ui.label("Keine Künstler*innen eingetragen")
+        return
+    for a in artist_list:
+        artist_chip(session, a, event_id, on_change)
 
 async def print_page(session, date: str):
     date_str = datetime.date.fromisoformat(date).strftime("%A, %d.%m.%Y")
@@ -56,6 +81,9 @@ async def detail_page(session, date: str):
         event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator'))
         reservation_label.set_text("Reservierungen: " + str(event.get("num_reservations")))
         artist_label.set_text("Künstler*innen: " + str(event.get("num_artists")))
+        artists_div.clear()
+        with artists_div:
+            add_artists_chips(session, data.get('artists'), event.get('id'), on_change=generate_overview)
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.row(wrap=False).classes('w-full'):
@@ -70,10 +98,12 @@ async def detail_page(session, date: str):
                 ui.label(date_str).classes("text-xl").style("width: 100%; height: 100%; text-align: center;")
             ui.button(icon="arrow_forward", on_click=next_event)
         ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
-        async def edit_artists():
-            d = await edit_bookings_dialog(session, date=date)
-            await d
-            await generate_overview()
+        async def add_artist():
+            res = await api_call(session, "events/" + date)
+            event_id = res.get('id')
+            d = await add_booking_dialog(session, event_id)
+            if await d:
+                await generate_overview()
         async def add_reservation():
             d = await edit_reservation_dialog(session, date=date)
             if await d:
@@ -95,12 +125,12 @@ async def detail_page(session, date: str):
         with ui.row().classes('w-full'):
             artist_label = ui.label(f"Künstler*innen: ...").classes("text-xl")
             ui.space()
-            ui.button(icon="theater_comedy", on_click=edit_artists)
-            #TODO chips for artists
+            ui.button(icon="person_add", on_click=add_artist, color="secondary")
+        artists_div = ui.element('div').classes('w-full')
         with ui.row().classes('w-full'):
             reservation_label = ui.label(f"Reservierungen: ...").classes("text-xl")
             ui.space()
-            ui.button(icon="group_add", on_click=add_reservation, color="positive")
+            ui.button(icon="group_add", on_click=add_reservation)
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
             table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">

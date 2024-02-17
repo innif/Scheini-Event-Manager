@@ -173,7 +173,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full')
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full')
         print(moderator)
-        moderator_input = ui.select([moderator], label='Moderator', value=moderator, with_input=True, new_value_mode="add-unique").classes('w-full')\
+        moderator_input = ui.select([moderator], label='Moderation', value=moderator, with_input=True, new_value_mode="add-unique").classes('w-full')\
             .props('use-input hide-selected fill-input input-debounce="0" hide-dropdown-icon')
         if res is not None:
             delete_button = ui.button('Event löschen', on_click=delete, color='red', icon = 'delete').classes('w-full')
@@ -181,4 +181,31 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
             cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(None))
             save_button = ui.button('Speichern', on_click=save)
     ui.timer(0.1, load_auto_complete, once=True)
+    return dialog
+
+async def edit_single_booking_dialog(session, artist, event_id):
+    async def save():
+        await api_call(session, f'bookings/?event_id={event_id}&artist_id={artist.get("id")}&comment={comment_input.value}', method="PUT")
+        ui.notify("Kommentar gespeichert")
+        dialog.submit(True)
+    with ui.dialog() as dialog, ui.card():
+        ui.label(artist.get('name')).classes('text-xl')
+        comment_input = ui.input('Kommentar', value=artist.get('comment')).classes('w-full')
+        with ui.row().classes('w-full no-wrap'):
+            ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
+            ui.button("Speichern", on_click=save).classes("w-full")
+    return dialog
+
+async def add_booking_dialog(session, event_id):
+    async def save():
+        await api_call(session, f'bookings/?event_id={event_id}&artist={name_input.value}&comment={comment_input.value}', method="POST")
+        ui.notify("Künstler*in hinzugefügt")
+        dialog.submit(True)
+    with ui.dialog() as dialog, ui.card():
+        ui.label("Künstler*in hinzufügen").classes('text-xl')
+        name_input = ui.input('Name').classes('w-full')
+        comment_input = ui.input('Kommentar').classes('w-full')
+        with ui.row().classes('w-full no-wrap'):
+            ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
+            ui.button("Speichern", on_click=save).classes("w-full")
     return dialog
