@@ -104,8 +104,8 @@ async def edit_bookings_dialog(session, date):
         options = [o.get('name') for o in options]
         new_artist.set_autocomplete(options)
     with ui.dialog() as dialog, ui.card():
-        date = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
-        ui.label(date).classes('text-xl')
+        date_str = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
+        ui.label(date_str).classes('text-xl')
         table = ui.table(columns=columns_artists, rows=artists).classes('w-full')
         table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
