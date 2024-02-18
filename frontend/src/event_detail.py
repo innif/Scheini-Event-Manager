@@ -99,9 +99,8 @@ async def detail_page(session, date: str):
             ui.button(icon="arrow_forward", on_click=next_event)
         ui.button("Zurück zur Übersicht", on_click=lambda: ui.open('/')).classes("w-full")
         async def add_artist():
-            res = await api_call(session, "events/" + date)
-            event_id = res.get('id')
-            d = await add_booking_dialog(session, event_id)
+            event = await api_call(session, "events/" + date)
+            d = await add_booking_dialog(session, event)
             if await d:
                 await generate_overview()
         async def add_reservation():

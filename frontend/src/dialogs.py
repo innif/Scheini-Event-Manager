@@ -104,6 +104,8 @@ async def edit_bookings_dialog(session, date):
         options = [o.get('name') for o in options]
         new_artist.set_autocomplete(options)
     with ui.dialog() as dialog, ui.card():
+        date = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
+        ui.label(date).classes('text-xl')
         table = ui.table(columns=columns_artists, rows=artists).classes('w-full')
         table.add_slot(f'body-cell-buttons', """
                 <q-td :props="props">
@@ -196,13 +198,15 @@ async def edit_single_booking_dialog(session, artist, event_id):
             ui.button("Speichern", on_click=save).classes("w-full")
     return dialog
 
-async def add_booking_dialog(session, event_id):
+async def add_booking_dialog(session, event):
     async def save():
-        await api_call(session, f'bookings/?event_id={event_id}&artist={name_input.value}&comment={comment_input.value}', method="POST")
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={name_input.value}&comment={comment_input.value}', method="POST")
         ui.notify("Künstler*in hinzugefügt")
         dialog.submit(True)
     with ui.dialog() as dialog, ui.card():
         ui.label("Künstler*in hinzufügen").classes('text-xl')
+        date = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
+        ui.label(date)
         name_input = ui.input('Name').classes('w-full')
         comment_input = ui.input('Kommentar').classes('w-full')
         with ui.row().classes('w-full no-wrap'):
