@@ -108,7 +108,7 @@ async def detail_page(session, date: str):
             if await d:
                 await generate_overview()
         async def edit_event():
-            d = await edit_event_dialog(session, date=date)
+            d = await edit_event_dialog(session, date=date, alow_edit_date=False)
             result = await d
             if result == 'edit':
                 await generate_overview()

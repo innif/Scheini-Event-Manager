@@ -57,9 +57,10 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
         else:
             ui.label('Reservierung bearbeiten').classes('text-xl')
         ui.label('Datum: ' + datetime.date.fromisoformat(date).strftime("%d.%m.%y")).classes('text')
-        name_input = ui.input('Name', value=name).classes('w-full')
-        num_input = ui.number('Anzahl', value=num).classes('w-full')
-        comment_input = ui.input('Kommentar', value=comment).classes('w-full')
+        name_input = ui.input('Name', value=name).classes('w-full').on('keydown.enter', lambda: num_input.run_method("focus"))
+        num_input = ui.number('Anzahl', value=num).classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
+        comment_input = ui.input('Kommentar', value=comment).classes('w-full').on('keydown.enter', save)
+        name_input.run_method("focus")
         with ui.row().classes('w-full'):
             cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(False))
             save_button = ui.button('Speichern', on_click=save)
@@ -130,10 +131,11 @@ async def edit_bookings_dialog(session, date):
             ui.button(icon="add", on_click=add_artist, color="positive").classes("rounded-full my-auto flat")
         ui.button('Schließen', on_click=dialog.submit).classes('w-full')
     ui.timer(0.1, load_auto_complete, once=True)
+    ui.timer(0.1, lambda: new_artist.run_method("focus"), once=True)
     return dialog
 
 #TODO edit comment
-async def edit_event_dialog(session, date = None, moderator = "", event_kind = "open_stage"):
+async def edit_event_dialog(session, date = None, moderator = "", event_kind = "open_stage", alow_edit_date = True):
     res = None
     if date is not None:
         res = await api_call(session, "events/" + str(date))
@@ -172,11 +174,14 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
             ui.label('Neues Event').classes('text-xl')
         else:
             ui.label('Event bearbeiten').classes('text-xl')
-        date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full')
-        event_kind_input = ui.select(event_types, value=event_kind).classes('w-full')
+        date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus"))
+        event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
         print(moderator)
         moderator_input = ui.select([moderator], label='Moderation', value=moderator, with_input=True, new_value_mode="add-unique").classes('w-full')\
-            .props('use-input hide-selected fill-input input-debounce="0" hide-dropdown-icon')
+            .props('use-input hide-selected fill-input input-debounce="0" hide-dropdown-icon')\
+            .on('keydown.enter', save)
+        if not alow_edit_date:
+            date_input.props('disable')
         if res is not None:
             delete_button = ui.button('Event löschen', on_click=delete, color='red', icon = 'delete').classes('w-full')
         with ui.row().classes('w-full'):
@@ -187,18 +192,21 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
 
 async def edit_single_booking_dialog(session, artist, event_id):
     async def save():
+        comment = comment_input.value if comment_input.value else ""
         await api_call(session, f'bookings/?event_id={event_id}&artist_id={artist.get("id")}&comment={comment_input.value}', method="PUT")
         ui.notify("Kommentar gespeichert")
         dialog.submit(True)
     with ui.dialog() as dialog, ui.card():
         ui.label(artist.get('name')).classes('text-xl')
-        comment_input = ui.input('Kommentar', value=artist.get('comment')).classes('w-full')
+        comment_input = ui.input('Kommentar', value=artist.get('comment')).classes('w-full').on('keydown.enter', save)
+        comment_input.run_method("focus")
         with ui.row().classes('w-full no-wrap'):
             ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
             ui.button("Speichern", on_click=save).classes("w-full")
     return dialog
 
 async def add_booking_dialog(session, event):
+    #TODO catch duplicate
     async def save():
         await api_call(session, f'bookings/?event_id={event.get("id")}&artist={name_input.value}&comment={comment_input.value}', method="POST")
         ui.notify("Künstler*in hinzugefügt")
@@ -207,8 +215,9 @@ async def add_booking_dialog(session, event):
         ui.label("Künstler*in hinzufügen").classes('text-xl')
         date = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
         ui.label(date)
-        name_input = ui.input('Name').classes('w-full')
-        comment_input = ui.input('Kommentar').classes('w-full')
+        name_input = ui.input('Name').classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
+        comment_input = ui.input('Kommentar').classes('w-full').on('keydown.enter', save)
+        name_input.run_method("focus")
         with ui.row().classes('w-full no-wrap'):
             ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
             ui.button("Speichern", on_click=save).classes("w-full")
