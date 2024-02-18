@@ -125,7 +125,7 @@ async def edit_bookings_dialog(session, date):
         table.on('delete', delete)
         table.on('comment', update_comment)
         with ui.row().classes('w-full no-wrap'):
-            new_artist = ui.input('Künstler*in hinzufügen').classes('w-full')
+            new_artist = ui.input('Künstler*in hinzufügen').classes('w-full').on('keydown.enter', add_artist)
             ui.space()
             ui.button(icon="add", on_click=add_artist, color="positive").classes("rounded-full my-auto flat")
         ui.button('Schließen', on_click=dialog.submit).classes('w-full')
