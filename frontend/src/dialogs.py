@@ -8,6 +8,30 @@ columns_artists = [
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
 
+def artist_input(session, value = None):
+    async def load_auto_complete():
+        options = await api_call(session, "artists/")
+        options = [o.get('name') for o in options]
+        moderator_input.set_options(options)
+    artist_list = [value]
+    if value is None:
+        artist_list = []
+    moderator_input = ui.select(artist_list, label='Moderation', value=value, with_input=True, new_value_mode="add_unique")
+    storage = {"value": value} 
+    def store_val(f):
+        print(f.args)
+        storage["value"] = f.args[0]
+    def set_val(f):
+        print(f.args)
+        if storage.get("value") not in moderator_input.options:
+            moderator_input.options.append(storage.get("value"))
+        moderator_input.value = storage.get("value")
+        print(storage)
+    moderator_input.on("filter", store_val)
+    moderator_input.on("blur", set_val)
+    ui.timer(0.1, load_auto_complete, once=True)
+    return moderator_input
+
 def loading_dialog():
     with ui.dialog() as dialog, ui.card():
         #ui.label("Bitte warten...").classes('text-xl')
@@ -142,10 +166,6 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
     if res is not None:
         event_kind = res.get('event_kind')
         moderator = res.get('moderator')
-    async def load_auto_complete():
-        options = await api_call(session, "artists/")
-        options = [o.get('name') for o in options]
-        moderator_input.set_options(options)
     async def delete():
         d = confirm_dialog('Event löschen', 'Soll das Event wirklich gelöscht werden?')
         if await d:
@@ -177,9 +197,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus"))
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
         print(moderator)
-        moderator_input = ui.select([moderator], label='Moderation', value=moderator, with_input=True, new_value_mode="add-unique").classes('w-full')\
-            .props('use-input hide-selected fill-input input-debounce="0" hide-dropdown-icon')\
-            .on('keydown.enter', save)
+        moderator_input = artist_input(session, value=moderator).classes('w-full')#.on('keydown.enter', save)
         if not alow_edit_date:
             date_input.props('disable')
         if res is not None:
@@ -187,7 +205,6 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         with ui.row().classes('w-full'):
             cancel_button = ui.button('Abbrechen', on_click=lambda: dialog.submit(None))
             save_button = ui.button('Speichern', on_click=save)
-    ui.timer(0.1, load_auto_complete, once=True)
     return dialog
 
 async def edit_single_booking_dialog(session, artist, event_id):
