@@ -8,7 +8,8 @@ columns_artists = [
     {'name': 'buttons', 'label': '', 'field': 'buttons'},
 ]
 
-def artist_input(session, value = None):
+def artist_input(session, value = None, label = "Künstler*in"):
+    # TODO: use with enter 
     async def load_auto_complete():
         options = await api_call(session, "artists/")
         options = [o.get('name') for o in options]
@@ -16,8 +17,9 @@ def artist_input(session, value = None):
     artist_list = [value]
     if value is None:
         artist_list = []
-    moderator_input = ui.select(artist_list, label='Moderation', value=value, with_input=True, new_value_mode="add_unique")
     storage = {"value": value} 
+    def on_change(f):
+        storage["value"] = f.value
     def store_val(f):
         print(f.args)
         storage["value"] = f.args[0]
@@ -27,6 +29,7 @@ def artist_input(session, value = None):
             moderator_input.options.append(storage.get("value"))
         moderator_input.value = storage.get("value")
         print(storage)
+    moderator_input = ui.select(artist_list, label=label, value=value, with_input=True, on_change=on_change).props("hide-dropdown-icon")
     moderator_input.on("filter", store_val)
     moderator_input.on("blur", set_val)
     ui.timer(0.1, load_auto_complete, once=True)
@@ -91,7 +94,7 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
     return dialog
 
 async def edit_bookings_dialog(session, date):
-    #TODO suggest artists when typing
+    #TODO use artist_input (problem with enter)
     #TODO Technician field
     event = await api_call(session, f"events/{date}")
     artists = await api_call(session, f"artists/event/{date}")
@@ -197,7 +200,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus"))
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
         print(moderator)
-        moderator_input = artist_input(session, value=moderator).classes('w-full')#.on('keydown.enter', save)
+        moderator_input = artist_input(session, value=moderator, label="Moderation").classes('w-full')# .on('keydown.enter', save) TODO save and still use enter to select artist
         if not alow_edit_date:
             date_input.props('disable')
         if res is not None:
@@ -232,7 +235,7 @@ async def add_booking_dialog(session, event):
         ui.label("Künstler*in hinzufügen").classes('text-xl')
         date = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
         ui.label(date)
-        name_input = ui.input('Name').classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
+        name_input = artist_input(session).classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
         comment_input = ui.input('Kommentar').classes('w-full').on('keydown.enter', save)
         name_input.run_method("focus")
         with ui.row().classes('w-full no-wrap'):
