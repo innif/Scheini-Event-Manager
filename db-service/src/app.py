@@ -20,6 +20,7 @@ class Reservation(BaseModel):
 class Event(BaseModel):
     event_kind: str
     moderator: Optional[str] = Field(None)
+    comment: Optional[str] = Field(None)
 
 class Artist(BaseModel):
     name: str
@@ -273,7 +274,7 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.id, e.date, e.event_kind, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
         FROM events e, artists a
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id AND e.date = ?
@@ -311,9 +312,9 @@ async def update_event(date: str, event: Event, username: str = Depends(get_curr
 
     cursor.execute('''
         UPDATE events
-        SET event_kind = ?, moderator_id = ?
+        SET event_kind = ?, moderator_id = ?, comment = ?
         WHERE date = ?
-    ''', (event.event_kind, artist_id, date))
+    ''', (event.event_kind, artist_id, event.comment, date))
     db.commit()
     db.close()
     return {"message": "Event updated"}
@@ -341,7 +342,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.id, e.date, e.event_kind, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
         FROM events e, artists a
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id

@@ -78,6 +78,8 @@ async def detail_page(session, date: str):
         data = await get_event_data(session, date)
         table.rows = data.get('reservations')
         event = data.get('event')
+        comments.value = event.get('comment')
+        comments.on("update:model-value", lambda: save_comment_button.set_visibility(True))
         event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator'))
         reservation_label.set_text("Reservierungen: " + str(event.get("num_reservations")))
         artist_label.set_text("Künstler*innen: " + str(event.get("num_artists")))
@@ -114,6 +116,14 @@ async def detail_page(session, date: str):
                 await generate_overview()
             if result == 'delete':
                 ui.open('/')
+        async def save_comment():
+            event = await api_call(session, "events/" + date)
+            await api_call(session, "events/" + str(date), "PUT", json = {
+                'event_kind': event.get('event_kind'),
+                'moderator': event.get('moderator'),
+                'comment': comments.value
+            })
+            save_comment_button.set_visibility(False)
         with ui.row().classes('w-full'):
             event_label = ui.label().classes("text-xl")
             ui.space()
@@ -121,6 +131,9 @@ async def detail_page(session, date: str):
                 ui.button(icon="refresh", on_click=generate_overview)
                 ui.button(icon="edit", on_click=edit_event)
                 ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
+        comments = ui.input(label="Kommentar").classes("w-full")
+        save_comment_button = ui.button("Kommentar speichern", on_click=save_comment)
+        save_comment_button.set_visibility(False)
         with ui.row().classes('w-full'):
             artist_label = ui.label(f"Künstler*innen: ...").classes("text-xl")
             ui.space()

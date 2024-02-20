@@ -14,6 +14,7 @@ columns = [
      'classes': breakpoint('md', 'hidden', False), 'headerClasses': breakpoint('md', 'hidden', False)},
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True,
      'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden')},
+    {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'sortable': False, 'align': 'left'},
     {'name': 'num_reservations', 'label': 'Reserv.', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'num_artists', 'label': 'Künstl.', 'field': 'num_artists', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
@@ -52,6 +53,7 @@ async def get_data(session, month, year, past_events = False):
     return res
 
 async def overview_page(session):
+    #TODO Expandable Rows (for comments) https://nicegui.io/documentation/table#table_with_expandable_rows
     async def on_selection_change():
         if month_select is not None and year_select is not None:
             table.rows = await get_data(session, month_select.value, year_select.value, cb_past_events.value)

@@ -184,11 +184,13 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
             r = await api_call(session, "events/?date=" + date_input.value, "POST", json = {
                 'event_kind': event_kind_input.value,
                 'moderator': moderator_input.value,
+                'comment': comment_input.value
             })
         else:
             r = await api_call(session, "events/" + str(date), "PUT", json = {
                 'event_kind': event_kind_input.value,
                 'moderator': moderator_input.value,
+                'comment': comment_input.value
             })
         ui.notify('Event gespeichert')
         dialog.submit('edit')
@@ -199,8 +201,8 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
             ui.label('Event bearbeiten').classes('text-xl')
         date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus"))
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
-        print(moderator)
-        moderator_input = artist_input(session, value=moderator, label="Moderation").classes('w-full')# .on('keydown.enter', save) TODO save and still use enter to select artist
+        moderator_input = artist_input(session, value=moderator, label="Moderation").classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
+        comment_input = ui.input('Kommentar').classes('w-full').on('keydown.enter', save)
         if not alow_edit_date:
             date_input.props('disable')
         if res is not None:
