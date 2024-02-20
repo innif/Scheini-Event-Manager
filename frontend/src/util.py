@@ -22,7 +22,7 @@ event_types = {
 
 # key = None
 session = requests.Session()
-url = "http://db:5000/"
+url = "http://localhost:8000/"
 
 def breakpoint(size, css_class, max=True):
     '''Returns a string that can be used in the classes attribute of a ui element to apply a css class only on a certain breakpoint

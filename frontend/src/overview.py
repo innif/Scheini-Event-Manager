@@ -141,7 +141,7 @@ async def overview_page(session):
                     <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons 
                        @update:model-value="() => $parent.$emit('comment', props.row)"
                     >
-                        <q-input v-model="scope.value" dense autofocus counter/>
+                        <q-input v-model="scope.value" dense autofocus counter  @keyup.enter="scope.set"/>
                     </q-popup-edit>
                 </q-td>
             """)
