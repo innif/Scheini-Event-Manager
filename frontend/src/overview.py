@@ -13,8 +13,9 @@ columns = [
     {'name': 'date_str_short', 'label': 'Datum', 'field': 'date_str_short', 'required': True, 'align': 'left', 'sortable': True,
      'classes': breakpoint('md', 'hidden', False), 'headerClasses': breakpoint('md', 'hidden', False)},
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True,
+     'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden')},
+    {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'sortable': False, 'align': 'left',
      'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden')},
-    {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'sortable': False, 'align': 'left'},
     {'name': 'num_reservations', 'label': 'Reserv.', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'num_artists', 'label': 'Künstl.', 'field': 'num_artists', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
@@ -73,6 +74,15 @@ async def overview_page(session):
         if await d:
             await on_selection_change()
 
+    async def comment_update(args):
+        await api_call(session, "events/" + args['date'], "PUT", json = {
+            'event_kind': args['event_kind'],
+            'moderator': args['moderator'],
+            'comment': args['comment']
+        })
+        ui.notify("Kommentar gespeichert", color="positive")
+        await on_selection_change()
+
     with ui.column().style("margin: 0em; width: 100%; max-width: 60em; align-self: center;"):
         with ui.card().classes("w-full"), ui.row(wrap=False).classes('w-full'):
             def back():
@@ -125,9 +135,20 @@ async def overview_page(session):
                     <q-btn @click="$parent.$emit('add_artist', props)" icon="edit" flat dense my-auto color='positive'/>
                 </q-td>
             """)
+            table.add_slot(f'body-cell-comment', """
+                <q-td :props="props">
+                    {{ props.row.comment }}
+                    <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons 
+                       @update:model-value="() => $parent.$emit('comment', props.row)"
+                    >
+                        <q-input v-model="scope.value" dense autofocus counter/>
+                    </q-popup-edit>
+                </q-td>
+            """)
             table.on('action', lambda msg: print(msg))
             table.on('add', lambda msg: add_reservation(msg.args['row']['date']))
             table.on('edit', lambda msg: ui.open('/event/' + msg.args['row']['date']))
             table.on('add_artist', lambda msg: add_artist(msg.args['row']['date']))
+            table.on('comment', lambda msg: comment_update(msg.args))
             #table.on('row-click', lambda msg: print(msg.args))
     ui.timer(0.1, on_selection_change, once = True)

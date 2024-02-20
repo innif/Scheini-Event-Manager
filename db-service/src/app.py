@@ -274,7 +274,7 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.moderator_id
         FROM events e, artists a
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id AND e.date = ?

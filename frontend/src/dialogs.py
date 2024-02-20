@@ -169,6 +169,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
     if res is not None:
         event_kind = res.get('event_kind')
         moderator = res.get('moderator')
+        comment = res.get('comment')
     async def delete():
         d = confirm_dialog('Event löschen', 'Soll das Event wirklich gelöscht werden?')
         if await d:
@@ -202,7 +203,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus"))
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
         moderator_input = artist_input(session, value=moderator, label="Moderation").classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
-        comment_input = ui.input('Kommentar').classes('w-full').on('keydown.enter', save)
+        comment_input = ui.input('Kommentar', value=comment).classes('w-full').on('keydown.enter', save)
         if not alow_edit_date:
             date_input.props('disable')
         if res is not None:
