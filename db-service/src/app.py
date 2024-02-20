@@ -476,11 +476,15 @@ async def create_booking(event_id: int, artist: str, comment: Optional[str] = No
         artist_id = cursor.lastrowid
     else:
         artist_id = artist_id.get("id")
-    cursor.execute('''
-        INSERT INTO bookings (event_id, artist_id, comment)
-        VALUES (?, ?, ?)
-    ''', (event_id, artist_id, comment))
-    db.commit()
+    try:
+        cursor.execute('''
+            INSERT INTO bookings (event_id, artist_id, comment)
+            VALUES (?, ?, ?)
+        ''', (event_id, artist_id, comment))
+        db.commit()
+    except sqlite3.IntegrityError:
+        db.close()
+        raise HTTPException(status_code=409, detail="Booking already exists")
     db.close()
     return {"message": "Booking created"}
 
