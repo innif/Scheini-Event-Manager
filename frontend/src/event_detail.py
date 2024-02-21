@@ -125,6 +125,21 @@ async def detail_page(session, date: str):
             })
             ui.notify("Kommentar gespeichert", color="positive")
             save_comment_button.set_visibility(False)
+        async def row_update(args):
+            print(args)
+            await api_call(session, "reservations/" + str(args.get("id")), "PUT", json = {
+                'name': args.get("name"),
+                'quantity': args.get("quantity"),
+                'comment': args.get("comment"),
+                'date': args.get("date")
+            })
+            # await api_call(session, "events/" + args['date'], "PUT", json = {
+            #     'event_kind': args['event_kind'],
+            #     'moderator': args['moderator'],
+            #     'comment': args['comment']
+            # })
+            # ui.notify("Kommentar gespeichert", color="positive")
+            # await generate_overview()
         with ui.row().classes('w-full'):
             event_label = ui.label().classes("text-xl")
             ui.space()
@@ -151,6 +166,36 @@ async def detail_page(session, date: str):
                     <q-btn @click="$parent.$emit('delete', props)" icon="delete" flat dense color='negative'/>
                 </q-td>
             """)
+            table.add_slot(f'body-cell-name', """
+                <q-td :props="props">
+                    {{ props.row.name }}
+                    <q-popup-edit v-model="props.row.name" v-slot="scope" buttons 
+                       @update:model-value="() => $parent.$emit('update', props.row)"
+                    >
+                        <q-input v-model="scope.value" dense autofocus counter @keyup.enter="scope.set"/>
+                    </q-popup-edit>
+                </q-td>
+            """)
+            table.add_slot(f'body-cell-quantity', """
+                <q-td :props="props">
+                    {{ props.row.quantity }}
+                    <q-popup-edit v-model="props.row.quantity" v-slot="scope" buttons 
+                       @update:model-value="() => $parent.$emit('update', props.row)"
+                    >
+                        <q-input v-model="scope.value" dense autofocus counter  @keyup.enter="scope.set"/>
+                    </q-popup-edit>
+                </q-td>
+            """)
+            table.add_slot(f'body-cell-comment', """
+                <q-td :props="props">
+                    {{ props.row.comment }}
+                    <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons 
+                       @update:model-value="() => $parent.$emit('update', props.row)"
+                    >
+                        <q-input v-model="scope.value" dense autofocus counter @keyup.enter="scope.set"/>
+                    </q-popup-edit>
+                </q-td>
+            """)
             async def delete_reservation(id):
                 dialog = confirm_dialog('Reservierung löschen', 'Soll die Reservierung wirklich gelöscht werden?')
                 if await dialog:
@@ -165,5 +210,6 @@ async def detail_page(session, date: str):
 
             table.on('edit', lambda msg: edit_reservation(msg.args['row']['id']))
             table.on('delete', lambda msg: delete_reservation(msg.args['row']['id']))
+            table.on('update', lambda msg: row_update(msg.args))
 
     ui.timer(0.1, generate_overview, once=True)
