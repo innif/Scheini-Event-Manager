@@ -133,13 +133,8 @@ async def detail_page(session, date: str):
                 'comment': args.get("comment"),
                 'date': args.get("date")
             })
-            # await api_call(session, "events/" + args['date'], "PUT", json = {
-            #     'event_kind': args['event_kind'],
-            #     'moderator': args['moderator'],
-            #     'comment': args['comment']
-            # })
-            # ui.notify("Kommentar gespeichert", color="positive")
-            # await generate_overview()
+            ui.notify("Änderung gespeichert")
+            await generate_overview()
         with ui.row().classes('w-full'):
             event_label = ui.label().classes("text-xl")
             ui.space()
