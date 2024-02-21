@@ -177,7 +177,7 @@ async def detail_page(session, date: str):
                     <q-popup-edit v-model="props.row.quantity" v-slot="scope" buttons 
                        @update:model-value="() => $parent.$emit('update', props.row)"
                     >
-                        <q-input v-model="scope.value" dense autofocus counter  @keyup.enter="scope.set"/>
+                        <q-input v-model="scope.value" dense autofocus counter @keyup.enter="scope.set" type="number"/>
                     </q-popup-edit>
                 </q-td>
             """)
