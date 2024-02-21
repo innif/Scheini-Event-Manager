@@ -200,7 +200,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
             ui.label('Neues Event').classes('text-xl')
         else:
             ui.label('Event bearbeiten').classes('text-xl')
-        date_input = ui.input('Datum (YYYY-MM-DD)', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus"))
+        date_input = ui.input('Datum', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus")).props('type="date"')
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
         moderator_input = artist_input(session, value=moderator, label="Moderation").classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
         comment_input = ui.input('Kommentar', value=comment).classes('w-full').on('keydown.enter', save)
