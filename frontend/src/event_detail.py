@@ -132,7 +132,7 @@ async def detail_page(session, date: str):
                 ui.button(icon="refresh", on_click=generate_overview)
                 ui.button(icon="edit", on_click=edit_event)
                 ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
-        comments = ui.input(label="Kommentar").classes("w-full")
+        comments = ui.input(label="Kommentar").classes("w-full").props("outlined")
         save_comment_button = ui.button("Kommentar speichern", on_click=save_comment).classes("w-full")
         save_comment_button.set_visibility(False)
         with ui.row().classes('w-full'):
