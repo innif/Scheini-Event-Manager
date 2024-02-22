@@ -364,7 +364,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
         query += ' AND e.date <= ?'
         params.append(end_date)
     
-    query += 'GROUP BY e.id'
+    query += 'GROUP BY e.id ORDER BY e.date ASC'
     
     cursor.execute(query, params)
     events = cursor.fetchall()

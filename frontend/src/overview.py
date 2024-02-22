@@ -44,7 +44,11 @@ async def get_data(session, month, year, past_events = False):
     if not past_events:
         start = max(start, datetime.date.today())
     start = start.isoformat()
-    end = (datetime.date(year, month + 1, 1) - timedelta(days=1)).isoformat()
+    end = None
+    if month == 12:
+        end = (datetime.date(year + 1, 1, 1) - timedelta(days=1)).isoformat()
+    else:
+        end = (datetime.date(year, month + 1, 1) - timedelta(days=1)).isoformat()
     res = await api_call(session, "events/?start_date=" + start + "&end_date=" + end)
     for r in res:
         date = datetime.date.fromisoformat(r['date'])
