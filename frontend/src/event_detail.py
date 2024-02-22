@@ -33,6 +33,16 @@ def artist_chip(session, artist, event_id: int, on_change=None):
     chip.on('remove', remove)
     chip.on('click', click)
 
+def technician_chip(session, technician, event_id: int, on_change=None):
+    async def click(msg):
+        pass
+    with ui.element('q-chip').props('clickable removable icon="instant_mix" @click"$parent.$emit(\'click\') color="accent" text-color="white"') as chip:
+        ui.label(technician.get('name'))
+        if technician.get('comment') is not None and technician.get('comment') != "":
+            ui.label(technician.get('comment')).classes("italic").props('color="white"').style("margin-left: 0.5em")
+            #ui.icon('notes', color='white')
+    chip.on('click', click)
+
 def add_artists_chips(session, artist_list, event_id: int, on_change=None):
     if artist_list is None or len(artist_list) == 0:
         ui.label("Keine Künstler*innen eingetragen")
