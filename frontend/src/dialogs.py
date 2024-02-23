@@ -52,6 +52,15 @@ def confirm_dialog(title, text):
             ui.button('Bestätigen', on_click=lambda: dialog.submit(True))
     return dialog
 
+def input_dialog(title, text=None, value=""):
+    with ui.dialog() as dialog, ui.card():
+        ui.label(title).classes('text-xl')
+        if text:
+            ui.label(text).classes('text')
+        input = ui.input(value=value).classes('w-full').on('keydown.enter', lambda: dialog.submit(input.value if input.value else "")).props('autofocus clearable')
+        ui.button('Bestätigen', on_click=lambda: dialog.submit(input.value if input.value else "")).classes('w-full')
+    return dialog
+
 async def edit_reservation_dialog(session, reservation_id = None, date = None, name = "", num = 1, comment = ""):
     if reservation_id is None and date is None:
         return

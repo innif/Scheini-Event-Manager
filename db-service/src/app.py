@@ -6,6 +6,7 @@ from typing import Optional
 import sqlite3
 import datetime
 import json
+import hashlib
 
 app = FastAPI()
 security = HTTPBasic()
@@ -28,6 +29,13 @@ class Artist(BaseModel):
     description_short: Optional[str] = Field(None)
     image: Optional[str] = Field(None)
     website: Optional[str] = Field(None)
+
+class Employee(BaseModel):
+    name: str
+    email: Optional[str] = Field(None)
+    username: Optional[str] = Field(None)
+    password: Optional[str] = Field(None)
+    roles: list[str]
 
 def dict_factory(cursor, row):
     d = {}
@@ -62,7 +70,8 @@ async def startup_event():
             description TEXT,
             description_short TEXT,
             image TEXT,
-            comment TEXT
+            comment TEXT,
+            technician TEXT
         )
     ''')
     cursor.execute('''
@@ -274,7 +283,7 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.moderator_id
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.moderator_id, e.technician
         FROM events e, artists a
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id AND e.date = ?
@@ -342,7 +351,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.technician
         FROM events e, artists a
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id
@@ -510,6 +519,42 @@ async def update_booking(event_id: int, artist_id: int, comment: str, username: 
     db.commit()
     db.close()
     return {"message": "Booking updated"}
+
+@app.put("/execute_sql/", summary="Execute a custom SQL command")
+async def execute_sql(command: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    try:
+        cursor.execute(command)
+        db.commit()
+    except Exception as e:
+        db.close()
+        raise HTTPException(status_code=400, detail=str(e))
+    db.close()
+    return {"message": "Command executed"}
+
+@app.get("/execute_sql/", summary="Execute a custom SQL query")
+async def execute_sql_query(command: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    try:
+        cursor.execute(command)
+        result = cursor.fetchall()
+    except Exception as e:
+        db.close()
+        raise HTTPException(status_code=400, detail=str(e))
+    db.close()
+    return result
+
+@app.put("/technician/", summary="Assign a technician to an event")
+async def assign_technician(event_id: int, technician: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE events
+        SET technician = ?
+        WHERE id = ?
+    ''', (technician, event_id))
+    db.commit()
+    db.close()
+    return {"message": "Technician assigned"}
 
 if __name__ == "__main__":
     import uvicorn
