@@ -4,7 +4,7 @@
 from nicegui import ui
 import datetime
 from datetime import timedelta
-from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog, edit_single_booking_dialog, add_booking_dialog
+from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog, edit_single_booking_dialog, add_booking_dialog, input_dialog
 from util import event_types, api_call, breakpoint
 
 columns = [
@@ -33,28 +33,35 @@ def artist_chip(session, artist, event_id: int, on_change=None):
     chip.on('remove', remove)
     chip.on('click', click)
 
-def technician_chip(session, technician, event_id: int, on_change=None):
+def technician_chip(session, technician:str, event_id: int, on_change=None):
     async def click(msg):
-        pass
-    with ui.element('q-chip').props('clickable removable icon="instant_mix" @click"$parent.$emit(\'click\') color="accent" text-color="white"') as chip:
-        ui.label(technician.get('name'))
-        if technician.get('comment') is not None and technician.get('comment') != "":
-            ui.label(technician.get('comment')).classes("italic").props('color="white"').style("margin-left: 0.5em")
-            #ui.icon('notes', color='white')
+        d =  input_dialog("Technik", "Techniker*in bearbeiten/hinzufügen", value=technician)
+        await api_call(session, "technician/?event_id=" + str(event_id) + "&technician=" + str(await d), "PUT")
+        await on_change()
+    with ui.element('q-chip').props('clickable icon="tune" @click"$parent.$emit(\'click\') color="accent" text-color="white"') as chip:
+        if technician is None or technician == "":
+            ui.label("Techniker*in hinzufügen").classes("italic")
+        else:
+            ui.label(technician)
     chip.on('click', click)
 
-def add_artists_chips(session, artist_list, event_id: int, on_change=None):
+def add_artists_chips(session, artist_list, event: dict, on_change=None):
     if artist_list is None or len(artist_list) == 0:
-        ui.label("Keine Künstler*innen eingetragen")
-        return
+        with ui.element('q-chip').props('color="negative" text-color="white"'):
+            ui.label("Keine Künstler*innen eingetragen")
     for a in artist_list:
-        artist_chip(session, a, event_id, on_change)
+        artist_chip(session, a, event.get('id'), on_change)
+    technician_chip(session, event.get('technician'), event.get('id'), on_change)
 
 async def print_page(session, date: str):
+    #TODO print next days
     date_str = datetime.date.fromisoformat(date).strftime("%A, %d.%m.%Y")
     reservations = await api_call(session, "reservations/date/" + date)
     artists = await api_call(session, "artists/event/" + date)
+    events = await api_call(session, "events/" + date)
     ui.label(date_str).classes("text-xl")
+    if events.get('comment') is not None and events.get('comment') != "":
+        ui.label(events.get('comment')).classes("text-sm italic").style("color: grey")
     with ui.column():
         for r in reservations:
             with ui.row().classes("w-full"):
@@ -70,6 +77,7 @@ async def print_page(session, date: str):
             if a['comment'] is not None and a['comment'] != "":
                 ui.label(a['comment']).classes("text-sm italic").style("color: grey")
             ui.label(" | ")
+            ui.label("Technik: " + events.get('technician')).style("color: grey")
     ui.run_javascript("window.print()")
     ui.timer(0.5, lambda: ui.run_javascript("window.close()"), once=True)
 
@@ -95,7 +103,7 @@ async def detail_page(session, date: str):
         artist_label.set_text("Künstler*innen: " + str(event.get("num_artists")))
         artists_div.clear()
         with artists_div:
-            add_artists_chips(session, data.get('artists'), event.get('id'), on_change=generate_overview)
+            add_artists_chips(session, data.get('artists'), event, on_change=generate_overview)
 
     with ui.column().style("margin: 0em; width: 100%; max-width: 50em; align-self: center;"):
         with ui.row(wrap=False).classes('w-full'):
