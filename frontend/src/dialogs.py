@@ -1,6 +1,7 @@
 from nicegui import ui
 import datetime
 from util import event_types, api_call
+import asyncio
 
 columns_artists = [
     {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left'},
@@ -17,22 +18,30 @@ def artist_input(session, value = None, label = "Künstler*in"):
     artist_list = [value]
     if value is None:
         artist_list = []
-    storage = {"value": value} 
+    storage = {"value": value, "old_value": ""} 
     def on_change(f):
         storage["value"] = f.value
+        print("on_change - ", storage.get("value"), moderator_input.value)
     def store_val(f):
         print(f.args)
         storage["value"] = f.args[0]
-    def set_val(f):
-        print(f.args)
+        print("store_val - ", storage.get("value"), moderator_input.value)
+    def set_val(f = None):
         if storage.get("value") not in moderator_input.options:
             moderator_input.options.append(storage.get("value"))
         moderator_input.value = storage.get("value")
-        print(storage)
+        storage["old_value"] = storage.get("value")
+        print("set_val - ", storage.get("value"))
+    async def restore_val(f = None):
+        await asyncio.sleep(0.1)
+        storage["value"] = storage["old_value"]
+        print("restore_val - ", storage.get("value"))
     moderator_input = ui.select(artist_list, label=label, value=value, with_input=True, on_change=on_change).props("hide-dropdown-icon")
     moderator_input.on("filter", store_val)
     moderator_input.on("blur", set_val)
+    moderator_input.on("focus", restore_val)
     ui.timer(0.1, load_auto_complete, once=True)
+    moderator_input.get_stored_value = lambda: storage.get("value")
     return moderator_input
 
 def loading_dialog():
@@ -184,7 +193,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         if res is None:
             r = await api_call(session, "events/?date=" + date_input.value, "POST", json = {
                 'event_kind': event_kind_input.value,
-                'moderator': moderator_input.value,
+                'moderator': moderator_input.get_stored_value(),
                 'comment': comment_input.value
             })
         else:
@@ -231,7 +240,7 @@ async def edit_single_booking_dialog(session, artist, event_id):
 async def add_booking_dialog(session, event):
     #TODO catch duplicate
     async def save():
-        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={name_input.value}&comment={comment_input.value}', method="POST")
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={name_input.get_stored_value()}&comment={comment_input.value}', method="POST")
         ui.notify("Künstler*in hinzugefügt")
         dialog.submit(True)
     with ui.dialog() as dialog, ui.card():
