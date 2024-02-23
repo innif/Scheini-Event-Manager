@@ -70,21 +70,18 @@ async def edit_reservation_dialog(session, reservation_id = None, date = None, n
         num = res['quantity']
         comment = res['comment']
         date = res['date']
+
     async def save():
+        json = {
+            'name': name_input.value,
+            'quantity': num_input.value,
+            'comment': comment_input.value,
+            'date': date
+        }
         if reservation_id is None:
-            await api_call(session, "reservations/", "POST", json = {
-                'name': name_input.value,
-                'quantity': num_input.value,
-                'comment': comment_input.value,
-                'date': date
-            })
+            await api_call(session, "reservations/", "POST", json = json)
         else:
-            await api_call(session, "reservations/" + str(reservation_id), "PUT", json = {
-                'name': name_input.value,
-                'quantity': num_input.value,
-                'comment': comment_input.value,
-                'date': date
-            })
+            await api_call(session, "reservations/" + str(reservation_id), "PUT", json = json)
         ui.notify('Reservierung gespeichert')
         dialog.submit(True)
     with ui.dialog() as dialog, ui.card():
