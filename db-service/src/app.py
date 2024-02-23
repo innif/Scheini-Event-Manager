@@ -260,9 +260,9 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 
         # Insert event with artist.id as moderator
         cursor.execute('''
-            INSERT INTO events (date, event_kind, moderator_id)
-            VALUES (?, ?, ?)
-        ''', (date, event.event_kind, artist_id))
+            INSERT INTO events (date, event_kind, moderator_id, comment)
+            VALUES (?, ?, ?, ?)
+        ''', (date, event.event_kind, artist_id, event.comment))
         db.commit()
     except sqlite3.IntegrityError:
         db.close()
