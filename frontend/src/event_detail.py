@@ -79,8 +79,6 @@ async def print_page(session, date: str):
             ui.label(" | ")
         if events.get('technician') is not None and events.get('technician') != "":
             ui.label("Technik: " + str(events.get('technician'))).style("color: grey")
-    ui.run_javascript("window.print()")
-    #ui.timer(0.5, lambda: ui.run_javascript("window.close()"), once=True)
 
 async def get_event_data(session, date: str):
     data = {}
@@ -91,6 +89,7 @@ async def get_event_data(session, date: str):
     return data
 
 async def detail_page(session, date: str):
+    ui.html('<iframe id="subpageFrame" style="display:none;"></iframe>').set_visibility(False)
     date_str = datetime.date.fromisoformat(date).strftime("%A, %d.%m.%Y")
     # name, quantity, comment, date
     async def generate_overview():
@@ -160,7 +159,14 @@ async def detail_page(session, date: str):
             with ui.row(wrap=False):
                 ui.button(icon="refresh", on_click=generate_overview)
                 ui.button(icon="edit", on_click=edit_event)
-                ui.button(icon="print", on_click=lambda: ui.open("/print/" + date, new_tab=True), color = "accent")
+                def print():
+                    ui.run_javascript('''
+                        var subpageFrame = document.getElementById('subpageFrame');
+                        subpageFrame.src = '/print/{}';
+                        subpageFrame.onload = function() {{
+                            subpageFrame.contentWindow.print();
+                        }}; '''.format(date))
+                ui.button(icon="print", on_click=print, color = "accent")
         comments = ui.input(label="Kommentar").classes("w-full").props("outlined")
         save_comment_button = ui.button("Kommentar speichern", on_click=save_comment).classes("w-full")
         save_comment_button.set_visibility(False)
