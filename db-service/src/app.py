@@ -340,7 +340,7 @@ async def delete_event(date: str, username: str = Depends(get_current_username))
     return {"message": "Event deleted"}
 
 @app.get("/events/", summary="Get all events")
-async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None, username: str = Depends(get_current_username)):
+async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None, min_reservations: Optional[int] = 0, username: str = Depends(get_current_username)):
     try:
         if start_date is not None:
             datetime.date.fromisoformat(start_date)
@@ -363,6 +363,9 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     if end_date is not None:
         query += ' AND e.date <= ?'
         params.append(end_date)
+    if min_reservations > 0:
+        query += ' AND num_reservations >= ?'
+        params.append(min_reservations)
     
     query += 'GROUP BY e.id ORDER BY e.date ASC'
     

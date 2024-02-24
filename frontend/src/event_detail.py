@@ -59,6 +59,7 @@ async def print_page(session, date: str):
     reservations = await api_call(session, "reservations/date/" + date)
     artists = await api_call(session, "artists/event/" + date)
     events = await api_call(session, "events/" + date)
+    events_full = await api_call(session, "events/?start_date=" + date + "&min_reservations=40")
     ui.label(date_str).classes("text-xl")
     if events.get('comment') is not None and events.get('comment') != "":
         ui.label(events.get('comment')).classes("text-sm italic").style("color: grey")
@@ -79,6 +80,10 @@ async def print_page(session, date: str):
             ui.label(" | ")
         if events.get('technician') is not None and events.get('technician') != "":
             ui.label("Technik: " + str(events.get('technician'))).style("color: grey")
+    ui.label("Veranstaltungen mit 40+ Reservierungen:").classes("text-lg")
+    with ui.column().classes("w-full"):
+        for e in events_full:
+            ui.label(datetime.date.fromisoformat(e['date']).strftime("%A, %d.%m.%Y")+ " - " + e['moderator'] + " - " + str(e['num_reservations']) + " Reservierungen")
 
 async def get_event_data(session, date: str):
     data = {}
