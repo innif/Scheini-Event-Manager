@@ -6,7 +6,6 @@ from util import api_call, breakpoint
 import asyncio
 
 #TODO limit field length
-#TODO handle "&" in text
 
 columns = [
     {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True, 
@@ -16,9 +15,9 @@ columns = [
     {'name': 'date_str_short', 'label': 'Datum', 'field': 'date_str_short', 'required': True, 'align': 'left', 'sortable': True,
      'classes': breakpoint('md', 'hidden', False), 'headerClasses': breakpoint('md', 'hidden', False)},
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True,
-     'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden')},
+     'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden'), 'style': 'max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'},
     {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'sortable': False, 'align': 'left',
-     'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden')},
+     'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden'), 'style': 'max-width: 15em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'},
     {'name': 'num_reservations', 'label': 'Reserv.', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'num_artists', 'label': 'Künstl.', 'field': 'num_artists', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
