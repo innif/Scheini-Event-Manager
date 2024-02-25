@@ -188,11 +188,23 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
             ui.notify('Ungültiges Datum', color='negative')
             return
         if res is None:
-            r = await api_call(session, "events/?date=" + date_input.value, "POST", json = {
-                'event_kind': event_kind_input.value,
-                'moderator': moderator_input.value,
-                'comment': comment_input.value
-            })
+            if whole_week_cb.value:
+                # find the matching monday
+                date = date - datetime.timedelta(days=date.weekday())
+                for i in range(2, 6):
+                    date_str = str(date + datetime.timedelta(days=i))
+                    r = await api_call(session, "events/?date=" + date_str, "POST", json = {
+                        'event_kind': event_kind_input.value,
+                        'moderator': moderator_input.value,
+                        'comment': comment_input.value
+                    })
+                    ui.notify("Event am {} hinzugefügt".format(date_str))
+            else:
+                r = await api_call(session, "events/?date=" + date_input.value, "POST", json = {
+                    'event_kind': event_kind_input.value,
+                    'moderator': moderator_input.value,
+                    'comment': comment_input.value
+                })
         else:
             r = await api_call(session, "events/" + str(date), "PUT", json = {
                 'event_kind': event_kind_input.value,
@@ -207,6 +219,8 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
         else:
             ui.label('Event bearbeiten').classes('text-xl')
         date_input = ui.input('Datum', value=date).classes('w-full').on('keydown.enter', lambda: event_kind_input.run_method("focus")).props('type="date"')
+        whole_week_cb = ui.checkbox("Events für Mi-Sa erstellen", value=False)
+        whole_week_cb.set_visibility(res is None)
         event_kind_input = ui.select(event_types, value=event_kind).classes('w-full').on('keydown.enter', lambda: moderator_input.run_method("focus"))
         moderator_input = artist_input(session, value=moderator, label="Moderation").classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
         comment_input = ui.input('Kommentar', value=comment).classes('w-full').on('keydown.enter', save)
