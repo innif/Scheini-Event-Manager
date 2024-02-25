@@ -24,6 +24,10 @@ event_types = {
 session = requests.Session()
 url = "http://db:5000/"
 
+def escape_for_url(s):
+    s = str(s)
+    return s.replace("&", "%26").replace("+", "%2B").replace("#", "%23")
+
 def breakpoint(size, css_class, max=True):
     '''Returns a string that can be used in the classes attribute of a ui element to apply a css class only on a certain breakpoint
     size: str, one of "xs", "sm", "md", "lg", "xl"

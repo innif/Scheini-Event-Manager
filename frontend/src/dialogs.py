@@ -1,6 +1,6 @@
 from nicegui import ui
 import datetime
-from util import event_types, api_call
+from util import event_types, api_call, escape_for_url
 
 columns_artists = [
     {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left'},
@@ -120,7 +120,7 @@ async def edit_bookings_dialog(session, date):
         if artist_name in [r.get("name") for r in table.rows]:
             ui.notify('Künstler*in bereits eingetragen', color='negative')
             return
-        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={artist_name}', method="POST")
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={escape_for_url(artist_name)}', method="POST")
         new_artist.value = ""
         await update_artists()
     async def update_artists():
@@ -131,7 +131,7 @@ async def edit_bookings_dialog(session, date):
         comment = msg.args['comment']
         if comment is None:
             comment = ""
-        await api_call(session, f'bookings/?event_id={event.get("id")}&artist_id={artist_id}&comment={comment}', method="PUT")
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist_id={artist_id}&comment={escape_for_url(comment)}', method="PUT")
         ui.notify("Kommentar gespeichert")
     async def load_auto_complete():
         options = await api_call(session, "artists/")
@@ -152,7 +152,7 @@ async def edit_bookings_dialog(session, date):
                     <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons 
                        @update:model-value="() => $parent.$emit('comment', props.row)"
                     >
-                        <q-input v-model="scope.value" dense autofocus counter/>
+                        <q-input v-model="scope.value" dense autofocus counter @keyup.enter="scope.set"/>
                     </q-popup-edit>
                 </q-td>
             """)
@@ -236,7 +236,7 @@ async def edit_event_dialog(session, date = None, moderator = "", event_kind = "
 async def edit_single_booking_dialog(session, artist, event_id):
     async def save():
         comment = comment_input.value if comment_input.value else ""
-        await api_call(session, f'bookings/?event_id={event_id}&artist_id={artist.get("id")}&comment={comment_input.value}', method="PUT")
+        await api_call(session, f'bookings/?event_id={event_id}&artist_id={artist.get("id")}&comment={escape_for_url(comment_input.value)}', method="PUT")
         ui.notify("Kommentar gespeichert")
         dialog.submit(True)
     with ui.dialog() as dialog, ui.card():
@@ -251,7 +251,7 @@ async def edit_single_booking_dialog(session, artist, event_id):
 async def add_booking_dialog(session, event):
     #TODO catch duplicate
     async def save():
-        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={name_input.value}&comment={comment_input.value}', method="POST")
+        await api_call(session, f'bookings/?event_id={event.get("id")}&artist={escape_for_url(name_input.value)}&comment={escape_for_url(comment_input.value)}', method="POST")
         ui.notify("Künstler*in hinzugefügt")
         dialog.submit(True)
     with ui.dialog() as dialog, ui.card():

@@ -5,7 +5,7 @@ from nicegui import ui
 import datetime
 from datetime import timedelta
 from dialogs import edit_reservation_dialog, confirm_dialog, loading_dialog, edit_event_dialog, edit_bookings_dialog, edit_single_booking_dialog, add_booking_dialog, input_dialog
-from util import event_types, api_call, breakpoint
+from util import event_types, api_call, breakpoint, escape_for_url
 
 columns = [
     {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left', 'sortable': True},
@@ -36,7 +36,7 @@ def artist_chip(session, artist, event_id: int, on_change=None):
 def technician_chip(session, technician:str, event_id: int, on_change=None):
     async def click(msg):
         d =  input_dialog("Technik", "Techniker*in bearbeiten/hinzufügen", value=technician)
-        await api_call(session, "technician/?event_id=" + str(event_id) + "&technician=" + str(await d), "PUT")
+        await api_call(session, "technician/?event_id=" + str(event_id) + "&technician=" + escape_for_url(await d), "PUT")
         await on_change()
     with ui.element('q-chip').props('clickable icon="tune" @click"$parent.$emit(\'click\') color="accent" text-color="white"') as chip:
         if technician is None or technician == "":
@@ -150,7 +150,7 @@ async def detail_page(session, date: str):
             ui.notify("Kommentar gespeichert", color="positive")
             save_comment_button.set_visibility(False)
         async def row_update(args):
-            print(args)
+            # print(args)
             await api_call(session, "reservations/" + str(args.get("id")), "PUT", json = {
                 'name': args.get("name"),
                 'quantity': args.get("quantity"),

@@ -5,6 +5,9 @@ from dialogs import edit_reservation_dialog, loading_dialog, edit_event_dialog, 
 from util import api_call, breakpoint
 import asyncio
 
+#TODO limit field length
+#TODO handle "&" in text
+
 columns = [
     {'name': 'weekday', 'label': 'Wochentag', 'field': 'weekday', 'required': True, 'align': 'left', 'sortable': True, 
      'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden')},
