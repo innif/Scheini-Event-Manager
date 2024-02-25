@@ -71,6 +71,7 @@ async def print_page(session, date: str):
                 ui.space()
                 ui.label(str(r['quantity']) + "x")
             ui.separator()
+    ui.label("Insgesamt: " + str(events.get('num_reservations')) + " Reservierungen").classes("text-bold")
     ui.label("Künstler*innen:").classes("text-lg")
     with ui.row().classes("w-full"):
         for a in artists:
