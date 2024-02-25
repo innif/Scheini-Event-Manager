@@ -17,7 +17,7 @@ columns = [
     {'name': 'moderator', 'label': 'Moderation', 'field': 'moderator', 'required': True, 'align': 'left', 'sortable': True,
      'classes': breakpoint('md', 'hidden'), 'headerClasses': breakpoint('md', 'hidden'), 'style': 'max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'},
     {'name': 'comment', 'label': 'Kommentar', 'field': 'comment', 'sortable': False, 'align': 'left',
-     'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden'), 'style': 'max-width: 15em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'},
+     'classes': breakpoint('sm', 'hidden'), 'headerClasses': breakpoint('sm', 'hidden'), 'style': 'max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'},
     {'name': 'num_reservations', 'label': 'Reserv.', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'num_artists', 'label': 'Künstl.', 'field': 'num_artists', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
