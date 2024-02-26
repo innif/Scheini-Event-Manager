@@ -340,7 +340,7 @@ async def delete_event(date: str, username: str = Depends(get_current_username))
     return {"message": "Event deleted"}
 
 @app.get("/events/", summary="Get all events")
-async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None, min_reservations: Optional[int] = 0, username: str = Depends(get_current_username)):
+async def get_all_events(start_date: Optional[str] = None, end_date: Optional[str] = None, min_reservations: Optional[int] = 0, search_query=None, username: str = Depends(get_current_username)):
     try:
         if start_date is not None:
             datetime.date.fromisoformat(start_date)
@@ -351,11 +351,11 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.technician
-        FROM events e, artists a
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.technician{}
+        FROM events e, artists a{}
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id
-    '''
+    '''.format(", a2.name as result" if search_query else "", ", artists a2" if search_query else "")
     params = []
     if start_date is not None:
         query += ' AND e.date >= ?'
@@ -366,8 +366,13 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     if min_reservations > 0:
         query += ' AND num_reservations >= ?'
         params.append(min_reservations)
-    
-    query += 'GROUP BY e.id ORDER BY e.date ASC'
+    if search_query:
+        query += ' AND a2.id = b.artist_id AND UPPER(a2.name) LIKE ?'
+        params.append(search_query.upper() + "%")
+        query += ' GROUP BY e.id, a2.name'
+    else:
+        query += ' GROUP BY e.id'
+    query += ' ORDER BY e.date ASC'
     
     cursor.execute(query, params)
     events = cursor.fetchall()
@@ -558,6 +563,19 @@ async def assign_technician(event_id: int, technician: str, username: str = Depe
     db.commit()
     db.close()
     return {"message": "Technician assigned"}
+
+@app.get("/events_by_artist/search", summary="Search for events by artist")
+async def search_events_by_artist(query: str, start_date: Optional[str] = None, end_date: Optional[str] = None, username: str = Depends(get_current_username)):
+    artist = query.upper() + "%" # search for artist names starting with the given string
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name
+        FROM events e, bookings b, artists a
+        WHERE UPPER(a.name) LIKE ? AND a.id = b.artist_id AND e.id = b.event_id
+    ''', (artist,))
+    events = cursor.fetchall()
+    db.close()
+    return events
 
 if __name__ == "__main__":
     import uvicorn
