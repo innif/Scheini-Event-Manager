@@ -37,6 +37,13 @@ months = {
     11: "November",
     12: "Dezember"
 }
+
+highlight_text = """
+    <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
+        {{ props.value }}
+    </q-td>
+"""
+
 years = [datetime.datetime.now().year + i for i in range(-1, 3)]
 month_select = None
 year_select = None
@@ -67,6 +74,7 @@ async def get_data(session, month, year, past_events: bool = False, search: str 
         r['date_str'] = date.strftime("%d.%m.%Y")
         r['date_str_short'] = date.strftime("%d.%m.%y (%a)")
         r['weekday'] = date.strftime("%A")
+        r['highlight'] = date.isocalendar()[1] % 2 == 0
     return res
 
 async def overview_page(session):
@@ -144,19 +152,22 @@ async def overview_page(session):
                 ui.button(icon='arrow_upward', on_click=toggle_search).props('flat')
             search_row.set_visibility(False)
         with ui.table(columns, rows=[]).classes('w-full bordered') as table:
+            table.add_slot(f'body-cell-date_str', highlight_text)
+            table.add_slot(f'body-cell-date_str_short', highlight_text)
+            table.add_slot(f'body-cell-weekday', highlight_text)
             table.add_slot(f'body-cell-moderator', """
-                <q-td :props="props">
+                <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
                     <q-btn :icon="props.row.event_kind == 'open_stage' ? 'mic_external_on' : 'person'" flat dense/>
                     {{ props.value }}
                 </q-td>
             """)
             table.add_slot(f'body-cell-buttons', """
-                <q-td :props="props">
+                <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
                     <q-btn @click="$parent.$emit('edit', props)" icon="visibility" dense flat color='primary'/>
                 </q-td>
             """)
             table.add_slot(f'body-cell-num_reservations', """
-                <q-td :props="props">
+                <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
                     <q-badge :color="props.value < 40 ? 'positive' : (props.value < 51 ? 'warning' : 'negative')">
                         {{ props.value }}
                     </q-badge>
@@ -164,7 +175,7 @@ async def overview_page(session):
                 </q-td>
             """)
             table.add_slot(f'body-cell-num_artists', """
-                <q-td :props="props">
+                <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
                     <q-badge :color="props.value >= 7 ? 'negative' : (props.value < 4 ? 'warning' : 'positive')">
                         {{ props.value }}
                     </q-badge>
@@ -172,7 +183,7 @@ async def overview_page(session):
                 </q-td>
             """)
             table.add_slot(f'body-cell-comment', """
-                <q-td :props="props">
+                <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
                     {{ props.row.comment }}
                     <q-popup-edit v-model="props.row.comment" v-slot="scope" buttons 
                        @update:model-value="() => $parent.$emit('comment', props.row)"
