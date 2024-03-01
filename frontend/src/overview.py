@@ -157,7 +157,7 @@ async def overview_page(session):
             """)
             table.add_slot(f'body-cell-num_reservations', """
                 <q-td :props="props">
-                    <q-badge :color="props.value < 40 ? 'positive' : (props.value < 52 ? 'warning' : 'negative')">
+                    <q-badge :color="props.value < 40 ? 'positive' : (props.value < 51 ? 'warning' : 'negative')">
                         {{ props.value }}
                     </q-badge>
                     <q-btn @click="$parent.$emit('add', props)" icon="add" flat dense my-auto color='positive'/>
@@ -165,7 +165,7 @@ async def overview_page(session):
             """)
             table.add_slot(f'body-cell-num_artists', """
                 <q-td :props="props">
-                    <q-badge :color="props.value >= 8 ? 'negative' : (props.value < 4 ? 'warning' : 'positive')">
+                    <q-badge :color="props.value >= 7 ? 'negative' : (props.value < 4 ? 'warning' : 'positive')">
                         {{ props.value }}
                     </q-badge>
                     <q-btn @click="$parent.$emit('add_artist', props)" icon="edit" flat dense my-auto color='positive'/>
