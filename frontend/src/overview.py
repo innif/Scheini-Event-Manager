@@ -137,13 +137,14 @@ async def overview_page(session):
             ui.button(icon="arrow_forward", on_click=forward).classes("my-auto")
         
         data = []
-        with ui.row(wrap=False).classes('w-full'): 
+        with ui.row().classes('w-full'): 
             cb_past_events = ui.checkbox("Vergangene Events anzeigen", on_change=on_selection_change)
             ui.space()
-            ui.button(icon="add", on_click=add_event, color="positive")
-            ui.button(icon="refresh", on_click=on_selection_change)
-            ui.button(icon="search", on_click=toggle_search)
-            ui.button(on_click=lambda: (app.storage.user.clear(), ui.open('/login')), icon='logout', color = 'negative')
+            with ui.row(wrap=False):
+                ui.button(icon="add", on_click=add_event, color="positive")
+                ui.button(icon="refresh", on_click=on_selection_change)
+                ui.button(icon="search", on_click=toggle_search)
+                ui.button(on_click=lambda: (app.storage.user.clear(), ui.open('/login')), icon='logout', color = 'negative')
         with ui.row(wrap=False).classes('w-full') as search_row:
             search_input = ui.input(label="Suche", on_change=on_selection_change).classes('w-full').props("clearable outlined")
             with search_input.add_slot('prepend'):
@@ -168,7 +169,7 @@ async def overview_page(session):
             """)
             table.add_slot(f'body-cell-num_reservations', """
                 <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
-                    <q-badge :color="props.value < 40 ? 'positive' : (props.value < 51 ? 'warning' : 'negative')">
+                    <q-badge :color="props.value < 40 ? 'primary' : (props.value < 51 ? 'warning' : 'negative')">
                         {{ props.value }}
                     </q-badge>
                     <q-btn @click="$parent.$emit('add', props)" icon="add" flat dense my-auto color='positive'/>
