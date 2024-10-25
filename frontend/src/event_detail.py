@@ -94,7 +94,7 @@ async def get_event_data(session, date: str):
     data['artists'] = await api_call(session, "artists/event/" + date)
     return data
 
-async def detail_page(session, date: str):
+async def detail_page(session, date: str, start_dialog=False, name="", quantity=1, comment=""):
     ui.html('<iframe id="subpageFrame" style="display:none;"></iframe>').set_visibility(False)
     date_str = datetime.date.fromisoformat(date).strftime("%A, %d.%m.%Y")
     # name, quantity, comment, date
@@ -239,3 +239,7 @@ async def detail_page(session, date: str):
             table.on('update', lambda msg: row_update(msg.args))
 
     ui.timer(0.1, generate_overview, once=True)
+    if start_dialog:
+        d = await edit_reservation_dialog(session, name=name, num=quantity, comment=comment, date=date)
+        if await d:
+            await generate_overview()
