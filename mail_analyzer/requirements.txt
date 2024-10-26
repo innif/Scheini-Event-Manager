@@ -1,0 +1,5 @@
+flask == 3.0.1
+fastapi == 0.109.0
+uvicorn
+openai
+requests
