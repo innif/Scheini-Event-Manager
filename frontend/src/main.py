@@ -44,6 +44,10 @@ async def index_page():
 async def event_page(date: str):
     await detail_page(session, date)
 
+@ui.page('/event/{date}/add')
+async def event_page(date: str, name: str = "", quantity: int = 1, comment: str = ""):
+    await detail_page(session, date, True, name, quantity, comment)
+
 @ui.page('/print/{date}')
 async def event_page(date: str):
     await print_page(session, date)
