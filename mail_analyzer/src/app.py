@@ -1,15 +1,22 @@
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Request
+from fastapi import Request, HTTPException, Depends, status
+import secrets
 import json
 from ai_analyze import analyze_mail, get_event_details, analyze_mail_response
 import datetime
 import locale
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from configparser import ConfigParser
 
 # datetime locale
 locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
 
 app = fastapi.FastAPI()
+security = HTTPBasic()
+config_object = ConfigParser()
+config_object.read("config.ini")
+secrets_object = config_object["API"]
 
 origins = [
     "http://localhost:*",
@@ -23,6 +30,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, secrets_object.get("user"))
+    correct_password = secrets.compare_digest(credentials.password, secrets_object.get("password"))
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 def display_html(output):
     text = ""
@@ -81,7 +99,7 @@ def combine_parts(msg):
     return out
 
 @app.post("/analyze")
-async def analyze(request: Request):
+async def analyze(request: Request, username: str = Depends(get_current_username)):
     # get json body
     try:
         msg = await request.json()
@@ -103,7 +121,7 @@ async def analyze(request: Request):
     return {"text": text, "res": res}
 
 @app.post("/gen_response")
-async def gen_response(request: Request):
+async def gen_response(request: Request, username: str = Depends(get_current_username)):
     # get json body
     try:
         msg = await request.json()

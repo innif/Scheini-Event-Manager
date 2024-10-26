@@ -9,6 +9,19 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# Install locales package
+RUN apt-get update && apt-get install -y locales
+
+# Uncomment the de_DE.UTF-8 locale in /etc/locale.gen and generate the locale
+RUN sed -i -e 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=de_DE.UTF-8
+
+# Set the locale environment variables
+ENV LANG de_DE.UTF-8  
+ENV LANGUAGE de_DE.UTF-8  
+ENV LC_ALL de_DE.UTF-8 
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
