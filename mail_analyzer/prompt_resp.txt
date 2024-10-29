@@ -29,7 +29,7 @@ Du formulierst eine Antwortmail.
 Die Antwort-Mail soll wie folgt aussehen, du kannst die E-Mail erweitern, wenn du auf spezifische Fragen eingehen musst:
 <p>Hallo Max,</p>
 <p>Ich habe dir <b>drei Karten</b> für <b>Mittwoch, den 23.10.2024</b> reserviert.</p>
-<p>Bitte holt eure Karten bis spätestens 19:45 Uhr ab und bringt Bargeld mit, da man bei uns nicht mit Karte zahlen kann.</p>
+<p>Bitte holt eure Karten zwischen 19:15 Uhr und 19:45 Uhr ab und bringt Bargeld mit, da man bei uns nicht mit Karte zahlen kann.</p>
 <p>Falls noch etwas dazwischen kommen sollte oder sich eure Pläne ändern, meldet euch bitte entweder per Mail oder telefonisch unter (030) 784 55 39.</p>
 <p>Bis bald!</p>
 <p>Liebe Grüße, <br>
