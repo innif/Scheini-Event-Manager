@@ -42,6 +42,17 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
+def check_date(date):
+    date = datetime.datetime.strptime(date, "%Y-%m-%d")
+    # check if date is in the future
+    if date < datetime.datetime.now():
+        return "Datum liegt in der Vergangenheit."
+    # check if day is monday or tuesday
+    if date.weekday() in [0, 1]:
+        return "Datum ist ein {}.".format(date.strftime("%A"))
+    return None
+    
+
 def display_html(output):
     text = ""
     reservations = output["bookings"]
@@ -59,12 +70,16 @@ def display_html(output):
         link = "http://rotes-buch.scheinbar.de/event/{}/add?name={}&quantity={}&comment={}".format(date, name, quantity, comment)
         #include link as html
         text += "<a href='{}'>Reservierung hinzufügen</a><br>".format(link)
+        if check_date(date) is not None:
+            text += "<b>{}</b><br>".format(check_date(date))
     for date in output["modify"]:
         event_details = get_event_details(date)
         date_pretty = datetime.datetime.strptime(date, "%Y-%m-%d").strftime("%a %d.%m.%Y")
         text += "Änderungswunsch: {} ({} Reservierungen) - ".format(date_pretty, event_details.get("num_reservations"), event_details.get("name"))
         link = "http://rotes-buch.scheinbar.de/event/{}/".format(date)
         text += "<a href='{}'>Tag Anzeigen</a><br>".format(link)
+        if check_date(date) is not None:
+            text += "<b>{}</b><br>".format(check_date(date))
     if len(reservations) == 0 and len(output["modify"]) == 0:
         text += "Keine Reservierungen in der Mail gefunden."
     return text
