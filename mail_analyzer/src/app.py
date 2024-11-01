@@ -44,8 +44,6 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
 
 def display_html(output):
     text = ""
-    if output.get("notes", "") != "":
-        text += "<b>{}</b><br>".format(output.get("notes", ""))
     reservations = output["bookings"]
     for r in reservations:
         date = r["date"]
