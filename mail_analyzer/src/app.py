@@ -45,7 +45,7 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
 def check_date(date):
     date = datetime.datetime.strptime(date, "%Y-%m-%d")
     # check if date is in the future
-    if date < datetime.datetime.now().date():
+    if date + datetime.timedelta(hours=20) < datetime.datetime.now():
         return "Datum liegt in der Vergangenheit."
     # check if day is monday or tuesday
     if date.weekday() in [0, 1]:
