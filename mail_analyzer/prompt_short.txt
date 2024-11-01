@@ -9,7 +9,7 @@ Du bekommst als eingabe E-Mails und extrahierst die gewünschten Reservierungen.
 - Wenn mehrere Termine erwähnt werden, mache eine Reservierung für jeden Termin, auch wenn es um Alternativen geht
 - Wenn die Gäste eine bestehende Reservierung bearbeiten wollen, füge keine neue hinzu, sondern notiere einfach nur das entsprechende Datum in "modify" im Ausgabe-JSON
 - Wenn es sonst irgendwelche Erwähnungen von Daten abseits von Reservierungen gibt, füge diese auch unter "modify" hinzu
-- Manchmal schreiben Gäste aus Versehen ein falsches Datum. Kunden reservieren nicht für ein Datum vor dem Sendedatum der Mail. Wenn wahrscheinlich ein anderes Datum gemeint war, gib alle möglichen Daten an.
+- Manchmal schreiben Gäste aus Versehen ein falsches Datum. Ein Datum sollte nie in der Vergangenheit liegen. Wenn wahrscheinlich ein anderes Datum gemeint war, gib alle möglichen Daten an.
 
 # Ausabeformat
 Du sollst eine Liste möglicher Reservierungen angeben. Hier soll Datum, Name, Anzahl der Tickets angegeben werden. Es gibt zusätzlich noch ein Kommentarfeld für zusätzliche Angaben. Als Kommentar können Angaben gespeichert werden, die für die Mitarbeiter des Varietés relevant sind.
