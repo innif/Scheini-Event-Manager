@@ -2,71 +2,22 @@ version: "3"
 services:
   db:
     restart: always
-    build: ./db-service
-    # ports:
-    #   - "8000:5000"
-    expose:
-      - 5000
+    build: /volume1/docker/rotes-buch/db-service
+    ports:
+      - "6010:5000"
     volumes:
-      - db-data:/app/db
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`rotes-buch.scheinbar.de`)"
-      - "traefik.http.routers.api.entrypoints=api_websecure"
-      - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - /volume1/docker/rotes-buch/data/db:/app/db
   mail_analyzer:
     restart: always
-    build: ./mail_analyzer
-    # ports:
-    #   - "8000:5001"
-    expose:
-      - 5001
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mail_analyzer.rule=Host(`rotes-buch.scheinbar.de`)"
-      - "traefik.http.routers.mail_analyzer.entrypoints=mail_analyzer_websecure"
-      - "traefik.http.routers.mail_analyzer.tls.certresolver=myresolver"
+    build: /volume1/docker/rotes-buch/mail_analyzer
+    ports:
+      - "6011:5001"
   ui:
     restart: always
     build: ./frontend
-    # ports:
-    #   - "8001:80"
-    expose:
-      - 80
+    ports:
+      - "6012:80"
     volumes:
       # - ./frontend/.nicegui:/app/.nicegui
-      - nicegui-data:/app/.nicegui
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`rotes-buch.scheinbar.de`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls.certresolver=myresolver"
-  traefik:
-    restart: always
-    image: traefik:v2.4
-    command:
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.api_websecure.address=:5000"
-      - "--entrypoints.mail_analyzer_websecure.address=:5001"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=finn@scheinbar.de"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "5000:5000"
-      - "5001:5001"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
-
-volumes:
-  nicegui-data:
-  db-data:
+      - /volume1/docker/rotes-buch/data/nicegui:/app/.nicegui
+      

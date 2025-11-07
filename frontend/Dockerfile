@@ -9,31 +9,26 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install locales package
-RUN apt-get update && apt-get install -y locales
-
-# Uncomment the de_DE.UTF-8 locale in /etc/locale.gen and generate the locale
-RUN sed -i -e 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen && \
+# Install locales package and configure locale
+RUN apt-get update && apt-get install -y locales && \
+    sed -i -e 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
-    update-locale LANG=de_DE.UTF-8
+    update-locale LANG=de_DE.UTF-8 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the locale environment variables
-ENV LANG de_DE.UTF-8  
-ENV LANGUAGE de_DE.UTF-8  
-ENV LC_ALL de_DE.UTF-8 
+ENV LANG=de_DE.UTF-8  
+ENV LANGUAGE=de_DE.UTF-8  
+ENV LC_ALL=de_DE.UTF-8 
 
-COPY ./requirements.txt ./requirements.txt
+# Copy dependency list and install dependencies
+COPY ./requirements.txt /tmp/requirements.txt
+RUN python -m pip install --upgrade pip && \
+    python -m pip install -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
-
-# Copy the source code into the container.
-COPY ./secrets.json ./secrets.json
+# Copy application files
+COPY ./secrets.json /app/secrets.json
 COPY ./src /app
 
 # Expose the port that the application listens on.

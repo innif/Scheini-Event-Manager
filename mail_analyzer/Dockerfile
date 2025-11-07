@@ -10,20 +10,18 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install locales package
-RUN apt-get update && apt-get install -y locales
-
-# Uncomment the de_DE.UTF-8 locale in /etc/locale.gen and generate the locale
-RUN sed -i -e 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen && \
+RUN apt-get update && apt-get install -y locales && \
+    sed -i -e 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
-    update-locale LANG=de_DE.UTF-8
+    update-locale LANG=de_DE.UTF-8 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the locale environment variables
-ENV LANG de_DE.UTF-8  
-ENV LANGUAGE de_DE.UTF-8  
-ENV LC_ALL de_DE.UTF-8 
+ENV LANG=de_DE.UTF-8  
+ENV LANGUAGE=de_DE.UTF-8  
+ENV LC_ALL=de_DE.UTF-8 
 
 # Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -34,16 +32,11 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
-
-# Switch to the non-privileged user to run the application.
-# USER appuser
+# Copy requirements and install dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN python -m pip install --upgrade pip && \
+    python -m pip install -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
 # Copy the source code into the container.
 COPY ./src /app
@@ -51,6 +44,10 @@ COPY . .
 
 # Expose the port that the application listens on.
 EXPOSE 5001
+
+# Switch to the non-privileged user to run the application.
+# (optional: uncomment if needed)
+# USER appuser
 
 # Run the application.
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5001"]

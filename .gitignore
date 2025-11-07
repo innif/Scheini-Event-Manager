@@ -12,3 +12,13 @@ db-service/db/database.db
 frontend/.nicegui/
 
 letsencrypt/
+
+data/
+
+db-service/__pycache__/
+
+db-service/secrets.json
+
+frontend/secrets.json
+
+mail_analyzer/config.ini
