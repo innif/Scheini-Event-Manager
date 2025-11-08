@@ -265,3 +265,67 @@ async def add_booking_dialog(session, event):
             ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
             ui.button("Speichern", on_click=save).classes("w-full")
     return dialog
+
+def bar_staff_input(session, value = None, label = "Tresenpersonal"):
+    async def load_auto_complete():
+        options = await api_call(session, "bar_staff/")
+        options = [o.get('name') for o in options]
+        bar_staff_input_widget.set_options(options)
+    bar_staff_list = [value]
+    if value is None:
+        bar_staff_list = []
+    storage = {"value": value}
+    def on_change(f):
+        storage["value"] = f.value
+    def store_val(f):
+        storage["value"] = f.args[0]
+    def set_val(f):
+        if storage.get("value") not in bar_staff_input_widget.options:
+            bar_staff_input_widget.options.append(storage.get("value"))
+        bar_staff_input_widget.value = storage.get("value")
+    bar_staff_input_widget = ui.select(bar_staff_list, label=label, value=value, with_input=True, on_change=on_change).props("hide-dropdown-icon")
+    bar_staff_input_widget.on("filter", store_val)
+    bar_staff_input_widget.on("blur", set_val)
+    ui.timer(0.1, load_auto_complete, once=True)
+    return bar_staff_input_widget
+
+async def edit_single_bar_assignment_dialog(session, bar_staff, event_id):
+    async def save():
+        comment = comment_input.value if comment_input.value else ""
+        await api_call(session, f'bar_assignments/?event_id={event_id}&bar_staff_id={bar_staff.get("id")}&comment={escape_for_url(comment_input.value)}', method="PUT")
+        ui.notify("Kommentar gespeichert")
+        dialog.submit(True)
+    with ui.dialog() as dialog, ui.card():
+        ui.label(bar_staff.get('name')).classes('text-xl')
+        comment_input = ui.input('Kommentar', value=bar_staff.get('comment')).classes('w-full').on('keydown.enter', save)
+        comment_input.run_method("focus")
+        with ui.row().classes('w-full no-wrap'):
+            ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
+            ui.button("Speichern", on_click=save).classes("w-full")
+    return dialog
+
+async def add_bar_assignment_dialog(session, event):
+    async def save():
+        await api_call(session, f'bar_assignments/?event_id={event.get("id")}&bar_staff_name={escape_for_url(name_input.value)}&comment={escape_for_url(comment_input.value)}', method="POST")
+        ui.notify("Tresenpersonal hinzugefügt")
+        dialog.submit(True)
+    with ui.dialog() as dialog, ui.card():
+        ui.label("Tresenpersonal hinzufügen").classes('text-xl')
+        date = datetime.date.fromisoformat(event.get('date')).strftime("%A, %d.%m.%Y")
+        ui.label(date)
+        name_input = bar_staff_input(session).classes('w-full').on('keydown.enter', lambda: comment_input.run_method("focus"))
+        comment_input = ui.input('Kommentar').classes('w-full').on('keydown.enter', save)
+        name_input.run_method("focus")
+        with ui.row().classes('w-full no-wrap'):
+            ui.button("Abbrechen", on_click=dialog.submit).classes("w-full")
+            ui.button("Speichern", on_click=save).classes("w-full")
+    return dialog
+
+def bar_staff_edit_dialog(bar_staff_1, bar_staff_2):
+    """Dialog zum Bearbeiten beider Bar-Staff-Personen gleichzeitig"""
+    with ui.dialog() as dialog, ui.card().style("min-width: 400px"):
+        ui.label("Tresenpersonal bearbeiten").classes('text-xl')
+        person1_input = ui.input(label="Person 1", value=bar_staff_1 or "").classes('w-full').props('autofocus')
+        person2_input = ui.input(label="Person 2", value=bar_staff_2 or "").classes('w-full')
+        ui.button('Speichern', on_click=lambda: dialog.submit((person1_input.value or "", person2_input.value or ""))).classes('w-full')
+    return dialog

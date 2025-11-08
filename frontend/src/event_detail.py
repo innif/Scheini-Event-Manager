@@ -45,6 +45,32 @@ def technician_chip(session, technician:str, event_id: int, on_change=None):
             ui.label(technician)
     chip.on('click', click)
 
+def bar_staff_chip(session, bar_staff_1: str, bar_staff_2: str, event: dict, on_change=None):
+    async def click(msg):
+        from dialogs import bar_staff_edit_dialog
+        d = bar_staff_edit_dialog(bar_staff_1, bar_staff_2)
+        result = await d
+        if result:
+            person1, person2 = result
+            await api_call(session, f"bar_staff/?event_id={event.get('id')}&bar_staff_1={escape_for_url(person1)}&bar_staff_2={escape_for_url(person2)}", "PUT")
+            await on_change()
+
+    # Erstelle Label-Text
+    names = []
+    if bar_staff_1 is not None and bar_staff_1 != "":
+        names.append(bar_staff_1)
+    if bar_staff_2 is not None and bar_staff_2 != "":
+        names.append(bar_staff_2)
+
+    label_text = " & ".join(names) if len(names) > 0 else "Tresenpersonal hinzufügen"
+
+    with ui.element('q-chip').props('clickable icon="local_bar" @click"$parent.$emit(\'click\') color="orange" text-color="white"') as chip:
+        if len(names) == 0:
+            ui.label(label_text).classes("italic")
+        else:
+            ui.label(label_text)
+    chip.on('click', click)
+
 def add_artists_chips(session, artist_list, event: dict, on_change=None):
     if artist_list is None or len(artist_list) == 0:
         with ui.element('q-chip').props('color="negative" text-color="white"'):
@@ -52,6 +78,7 @@ def add_artists_chips(session, artist_list, event: dict, on_change=None):
     for a in artist_list:
         artist_chip(session, a, event.get('id'), on_change)
     technician_chip(session, event.get('technician'), event.get('id'), on_change)
+    bar_staff_chip(session, event.get('bar_staff_1'), event.get('bar_staff_2'), event, on_change)
 
 async def print_page(session, date: str):
     #TODO print next days
@@ -81,6 +108,15 @@ async def print_page(session, date: str):
             ui.label(" | ")
         if events.get('technician') is not None and events.get('technician') != "":
             ui.label("Technik: " + str(events.get('technician'))).style("color: grey")
+            ui.label(" | ")
+        # Bar-Staff zusammen anzeigen
+        bar_staff_names = []
+        if events.get('bar_staff_1') is not None and events.get('bar_staff_1') != "":
+            bar_staff_names.append(events.get('bar_staff_1'))
+        if events.get('bar_staff_2') is not None and events.get('bar_staff_2') != "":
+            bar_staff_names.append(events.get('bar_staff_2'))
+        if len(bar_staff_names) > 0:
+            ui.label("Tresen: " + " & ".join(bar_staff_names)).style("color: grey")
     ui.label("Veranstaltungen mit 40+ Reservierungen:").classes("text-lg")
     with ui.column().classes("w-full"):
         for e in events_full:
@@ -106,7 +142,13 @@ async def detail_page(session, date: str, start_dialog=False, name="", quantity=
         comments.on("update:model-value", lambda: save_comment_button.set_visibility(True))
         event_label.set_text(event_types.get(event.get('event_kind')) + " - " + event.get('moderator'))
         reservation_label.set_text("Reservierungen: " + str(event.get("num_reservations")))
-        artist_label.set_text("Künstler*innen: " + str(event.get("num_artists")))
+        # Zähle Künstler + Techniker + Bar-Staff zusammen
+        total_people = event.get("num_artists")
+        if event.get('technician') is not None and event.get('technician') != "":
+            total_people += 1
+        total_people += event.get("num_bar_staff")
+
+        artist_label.set_text("Künstler*innen: " + str(total_people))
         artists_div.clear()
         with artists_div:
             add_artists_chips(session, data.get('artists'), event, on_change=generate_overview)

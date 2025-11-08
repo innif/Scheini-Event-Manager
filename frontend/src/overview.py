@@ -21,6 +21,7 @@ columns = [
     {'name': 'result', 'label': 'Suchergebnis', 'field': 'result', 'sortable': True, 'align': 'left', 'classes:': 'hidden', 'headerClasses': 'hidden'},
     {'name': 'num_reservations', 'label': 'Reserv.', 'field': 'num_reservations', 'sortable': True, 'align': 'left'},
     {'name': 'num_artists', 'label': 'Künstl.', 'field': 'num_artists', 'sortable': True, 'align': 'left'},
+    {'name': 'num_bar_staff', 'label': 'Tresen', 'field': 'num_bar_staff', 'sortable': True, 'align': 'left'},
     {'name': 'buttons', 'label': '', 'field': 'buttons', 'sortable': False},
 ]
 months = {
@@ -181,6 +182,13 @@ async def overview_page(session):
                         {{ props.value }}
                     </q-badge>
                     <q-btn @click="$parent.$emit('add_artist', props)" icon="edit" flat dense my-auto color='positive'/>
+                </q-td>
+            """)
+            table.add_slot(f'body-cell-num_bar_staff', """
+                <q-td :props="props" :class="(props.row.highlight)?'bg-grey-3':'bg-white'">
+                    <q-badge :color="props.value < 2 ? 'negative' : 'positive'">
+                        {{ props.value }}
+                    </q-badge>
                 </q-td>
             """)
             table.add_slot(f'body-cell-comment', """

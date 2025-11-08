@@ -37,6 +37,11 @@ class Employee(BaseModel):
     password: Optional[str] = Field(None)
     roles: list[str]
 
+class BarStaff(BaseModel):
+    name: str
+    phone: Optional[str] = Field(None)
+    email: Optional[str] = Field(None)
+
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -71,7 +76,9 @@ async def startup_event():
             description_short TEXT,
             image TEXT,
             comment TEXT,
-            technician TEXT
+            technician TEXT,
+            bar_staff_1 TEXT,
+            bar_staff_2 TEXT
         )
     ''')
     cursor.execute('''
@@ -108,6 +115,22 @@ async def startup_event():
             event_id INTEGER REFERENCES events(id),
             role TEXT CHECK( role IN ('technik', 'tresen', 'etc') ) NOT NULL,
             PRIMARY KEY (employee_id, event_id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bar_staff (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT,
+            email TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bar_assignments (
+            event_id INTEGER REFERENCES events(id),
+            bar_staff_id INTEGER REFERENCES bar_staff(id),
+            comment TEXT,
+            PRIMARY KEY (event_id, bar_staff_id)
         )
     ''')
     db.commit()
@@ -283,7 +306,7 @@ async def create_event(date: str, event: Event, username: str = Depends(get_curr
 async def get_event_by_date(date: str, username: str = Depends(get_current_username)):
     db, cursor = get_db()
     cursor.execute('''
-        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.moderator_id, e.technician
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.moderator_id, e.technician, e.bar_staff_1, e.bar_staff_2, (CASE WHEN e.bar_staff_1 IS NOT NULL AND e.bar_staff_1 != '' THEN 1 ELSE 0 END + CASE WHEN e.bar_staff_2 IS NOT NULL AND e.bar_staff_2 != '' THEN 1 ELSE 0 END) as num_bar_staff
         FROM events e, artists a
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id AND e.date = ?
@@ -351,7 +374,7 @@ async def get_all_events(start_date: Optional[str] = None, end_date: Optional[st
     
     db, cursor = get_db()
     query = '''
-        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.technician{}
+        SELECT e.id, e.date, e.event_kind, e.comment, a.name as moderator, COALESCE((SELECT SUM(quantity) FROM reservations WHERE event_id = e.id), 0) as num_reservations, COUNT(DISTINCT b.artist_id) as num_artists, e.technician, (CASE WHEN e.bar_staff_1 IS NOT NULL AND e.bar_staff_1 != '' THEN 1 ELSE 0 END + CASE WHEN e.bar_staff_2 IS NOT NULL AND e.bar_staff_2 != '' THEN 1 ELSE 0 END) as num_bar_staff{}
         FROM events e, artists a{}
         LEFT JOIN bookings b ON e.id = b.event_id
         WHERE e.moderator_id = a.id
@@ -564,6 +587,18 @@ async def assign_technician(event_id: int, technician: str, username: str = Depe
     db.close()
     return {"message": "Technician assigned"}
 
+@app.put("/bar_staff/", summary="Assign bar staff to an event")
+async def assign_bar_staff(event_id: int, bar_staff_1: Optional[str] = None, bar_staff_2: Optional[str] = None, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE events
+        SET bar_staff_1 = ?, bar_staff_2 = ?
+        WHERE id = ?
+    ''', (bar_staff_1, bar_staff_2, event_id))
+    db.commit()
+    db.close()
+    return {"message": "Bar staff assigned"}
+
 @app.get("/events_by_artist/search", summary="Search for events by artist")
 async def search_events_by_artist(query: str, start_date: Optional[str] = None, end_date: Optional[str] = None, username: str = Depends(get_current_username)):
     artist = query.upper() + "%" # search for artist names starting with the given string
@@ -576,6 +611,127 @@ async def search_events_by_artist(query: str, start_date: Optional[str] = None, 
     events = cursor.fetchall()
     db.close()
     return events
+
+@app.get("/bar_staff/", summary="Get all bar staff")
+async def get_all_bar_staff(username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id, name, phone, email
+        FROM bar_staff
+    ''')
+    bar_staff = cursor.fetchall()
+    db.close()
+    return bar_staff
+
+@app.get("/bar_staff/{bar_staff_id}", summary="Get a bar staff member by ID")
+async def get_bar_staff_by_id(bar_staff_id: int, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id, name, phone, email
+        FROM bar_staff
+        WHERE id = ?
+    ''', (bar_staff_id,))
+    bar_staff = cursor.fetchone()
+    db.close()
+    return bar_staff
+
+@app.post("/bar_staff/", summary="Create a new bar staff member")
+async def create_bar_staff(bar_staff: BarStaff, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        INSERT INTO bar_staff (name, phone, email)
+        VALUES (?, ?, ?)
+    ''', (bar_staff.name.strip(), bar_staff.phone, bar_staff.email))
+    bar_staff_id = cursor.lastrowid
+    db.commit()
+    db.close()
+    return {"message": "Bar staff created", "bar_staff_id": bar_staff_id}
+
+@app.put("/bar_staff/{bar_staff_id}", summary="Update a bar staff member")
+async def update_bar_staff(bar_staff_id: int, bar_staff: BarStaff, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE bar_staff
+        SET name = ?, phone = ?, email = ?
+        WHERE id = ?
+    ''', (bar_staff.name.strip(), bar_staff.phone, bar_staff.email, bar_staff_id))
+    db.commit()
+    db.close()
+    return {"message": "Bar staff updated"}
+
+@app.delete("/bar_staff/{bar_staff_id}", summary="Delete a bar staff member")
+async def delete_bar_staff(bar_staff_id: int, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        DELETE FROM bar_staff
+        WHERE id = ?
+    ''', (bar_staff_id,))
+    db.commit()
+    db.close()
+    return {"message": "Bar staff deleted"}
+
+@app.get("/bar_staff/event/{date}", summary="Get all bar staff for a specific date")
+async def get_bar_staff_by_date(date: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT bs.id, bs.name, bs.phone, bs.email, ba.comment
+        FROM bar_staff bs, bar_assignments ba, events e
+        WHERE e.date = ? AND e.id = ba.event_id AND bs.id = ba.bar_staff_id
+    ''', (date,))
+    bar_staff = cursor.fetchall()
+    db.close()
+    return bar_staff
+
+@app.post("/bar_assignments/", summary="Create a new bar assignment")
+async def create_bar_assignment(event_id: int, bar_staff_name: str, comment: Optional[str] = None, username: str = Depends(get_current_username)):
+    bar_staff_name = bar_staff_name.strip()
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT id FROM bar_staff WHERE name = ?
+    ''', (bar_staff_name,))
+    bar_staff_id = cursor.fetchone()
+    if bar_staff_id is None:
+        # create bar staff
+        cursor.execute('''
+            INSERT INTO bar_staff (name) VALUES (?)
+        ''', (bar_staff_name,))
+        bar_staff_id = cursor.lastrowid
+    else:
+        bar_staff_id = bar_staff_id.get("id")
+    try:
+        cursor.execute('''
+            INSERT INTO bar_assignments (event_id, bar_staff_id, comment)
+            VALUES (?, ?, ?)
+        ''', (event_id, bar_staff_id, comment))
+        db.commit()
+    except sqlite3.IntegrityError:
+        db.close()
+        raise HTTPException(status_code=409, detail="Bar assignment already exists")
+    db.close()
+    return {"message": "Bar assignment created"}
+
+@app.delete("/bar_assignments/", summary="Delete a bar assignment")
+async def delete_bar_assignment(event_id: int, bar_staff_id: int, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        DELETE FROM bar_assignments
+        WHERE event_id = ? AND bar_staff_id = ?
+    ''', (event_id, bar_staff_id))
+    db.commit()
+    db.close()
+    return {"message": "Bar assignment deleted"}
+
+@app.put("/bar_assignments/", summary="Update a bar assignment")
+async def update_bar_assignment(event_id: int, bar_staff_id: int, comment: str, username: str = Depends(get_current_username)):
+    db, cursor = get_db()
+    cursor.execute('''
+        UPDATE bar_assignments
+        SET comment = ?
+        WHERE event_id = ? AND bar_staff_id = ?
+    ''', (comment, event_id, bar_staff_id))
+    db.commit()
+    db.close()
+    return {"message": "Bar assignment updated"}
 
 if __name__ == "__main__":
     import uvicorn
